@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>نظام الحضور والانصراف بالتعرف على الوجه</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='48' y2='48'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='12' fill='url(%23g)'/%3E%3Ccircle cx='24' cy='18' r='8' stroke='%23fff' stroke-width='2.5' fill='none'/%3E%3Cpath d='M10 42c0-7.7 6.3-14 14-14s14 6.3 14 14' stroke='%23fff' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -63,9 +64,9 @@ body{
 }
 .brand{display:flex;align-items:center;gap:12px;padding:6px 8px}
 .logo{
-  width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;
+  width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
   background:linear-gradient(135deg,var(--accent),var(--accent2));
-  box-shadow:0 8px 26px rgba(34,211,238,.35);
+  box-shadow:0 8px 26px rgba(34,211,238,.35);flex-shrink:0;
 }
 .brand h1{font-size:19px;font-weight:900;letter-spacing:-.3px}
 .brand span{font-size:11.5px;color:var(--muted);display:block;margin-top:1px}
@@ -76,6 +77,8 @@ nav{display:flex;flex-direction:column;gap:6px;flex:1}
   background:transparent;color:var(--muted);font-family:inherit;font-size:14.5px;font-weight:600;
   border-radius:13px;transition:.22s;text-align:right;
 }
+.nav-btn svg{flex-shrink:0;opacity:.7;transition:.2s}
+.nav-btn:hover svg,.nav-btn.active svg{opacity:1}
 .nav-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
 .nav-btn.active{
   background:linear-gradient(90deg,rgba(34,211,238,.16),rgba(99,102,241,.10));
@@ -368,7 +371,15 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   <!-- الشريط الجانبي -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">👤</div>
+      <div class="logo" style="background:linear-gradient(135deg,#22d3ee,#6366f1);box-shadow:0 8px 30px rgba(34,211,238,.45)">
+        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="16" r="9" stroke="#fff" stroke-width="3" fill="none"/>
+          <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
+          <circle cx="24" cy="16" r="4" fill="#fff" opacity=".5"/>
+          <path d="M20 15.5c0-2.5 1.8-4.5 4-4.5s4 2 4 4.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <rect x="19" y="36" width="10" height="3" rx="1.5" fill="#fff" opacity=".3"/>
+        </svg>
+      </div>
       <div>
         <h1>حضور</h1>
         <span>نظام التعرف على الوجه</span>
@@ -376,11 +387,65 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
     </div>
 
     <nav>
-      <button class="nav-btn active" data-tab="scan">📷 تسجيل الحضور</button>
-      <button class="nav-btn" data-tab="employees">👥 الموظفون</button>
-      <button class="nav-btn" data-tab="records">📋 السجلات</button>
-      <button class="nav-btn" data-tab="reports">📊 التقارير</button>
-      <button class="nav-btn" data-tab="settings">⚙️ الإعدادات</button>
+      <button class="nav-btn active" data-tab="scan">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <rect x="4" y="8" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2.5" fill="none"/>
+          <circle cx="24" cy="22" r="8" stroke="currentColor" stroke-width="2.5" fill="none"/>
+          <circle cx="24" cy="22" r="3" fill="currentColor" opacity=".6"/>
+          <rect x="18" y="4" width="12" height="6" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
+          <circle cx="36" cy="14" r="2" fill="currentColor"/>
+          <path d="M14 38h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        تسجيل الحضور
+      </button>
+      <button class="nav-btn" data-tab="employees">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <circle cx="18" cy="14" r="7" stroke="currentColor" stroke-width="2.5" fill="none"/>
+          <path d="M4 40c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <circle cx="36" cy="16" r="5" stroke="currentColor" stroke-width="2" fill="none"/>
+          <path d="M38 28c4.5 1.5 8 5.5 8 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <rect x="30" y="32" width="14" height="2" rx="1" fill="currentColor" opacity=".2"/>
+        </svg>
+        الموظفون
+      </button>
+      <button class="nav-btn" data-tab="records">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <rect x="6" y="4" width="36" height="40" rx="3" stroke="currentColor" stroke-width="2.5" fill="none"/>
+          <line x1="14" y1="14" x2="34" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="14" y1="22" x2="34" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <line x1="14" y1="30" x2="28" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+          <circle cx="14" cy="22" r="1.5" fill="currentColor"/>
+          <circle cx="14" cy="30" r="1.5" fill="currentColor"/>
+          <path d="M10 38h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".4"/>
+        </svg>
+        السجلات
+      </button>
+      <button class="nav-btn" data-tab="reports">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <rect x="4" y="28" width="8" height="14" rx="2" fill="currentColor" opacity=".3"/>
+          <rect x="15" y="18" width="8" height="24" rx="2" fill="currentColor" opacity=".5"/>
+          <rect x="26" y="10" width="8" height="32" rx="2" fill="currentColor" opacity=".7"/>
+          <rect x="37" y="4" width="8" height="38" rx="2" fill="currentColor" opacity=".9"/>
+          <path d="M2 44h44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="10" cy="24" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <circle cx="20" cy="16" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <circle cx="30" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+          <circle cx="40" cy="6" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+        </svg>
+        التقارير
+      </button>
+      <button class="nav-btn" data-tab="settings">
+        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
+          <circle cx="24" cy="24" r="2" fill="currentColor"/>
+          <path d="M24 2v6M24 40v6M2 24h6M40 24h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M8.93 8.93l4.24 4.24M34.83 34.83l4.24 4.24M8.93 39.07l4.24-4.24M34.83 13.17l4.24-4.24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M17 8l2 3h10l2-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <path d="M17 40l2-3h10l2 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+        الإعدادات
+      </button>
     </nav>
 
     <div class="sidebar-foot">
@@ -409,7 +474,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
             <div class="cam-badge"><span class="dot"></span><span id="camBadgeTxt">الكاميرا متوقفة</span></div>
             <div class="cam-hint" id="scanHint">
               <div>
-                <div style="font-size:42px;margin-bottom:10px">📷</div>
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#8496b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:10px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                 <div>اضغط للبدء أو انتظر التشغيل التلقائي</div>
                 <div class="loading-dots" id="scanDots" style="display:none"><span></span><span></span><span></span></div>
                 <button class="cam-start-btn" id="scanHintBtn">▶ تشغيل الكاميرا</button>
@@ -418,28 +483,30 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
           </div>
 
           <div class="cam-actions">
-            <button id="btnStartScan" class="btn primary">▶ تشغيل الكاميرا</button>
-            <button id="btnStopScan" class="btn ghost" disabled>⏹ إيقاف</button>
+            <button id="btnStartScan" class="btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="vertical-align:middle"><polygon points="5 3 19 12 5 21 5 3"/></svg> تشغيل الكاميرا</button>
+            <button id="btnStopScan" class="btn ghost" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/></svg> إيقاف</button>
             <select id="cameraSelect" class="cam-select" title="اختيار الكاميرا">
-              <option value="user">📷 الكاميرا الأمامية</option>
-              <option value="environment">📷 الكاميرا الخلفية</option>
+              <option value="user">الكاميرا الأمامية</option>
+              <option value="environment">الكاميرا الخلفية</option>
             </select>
             <label class="switch"><input type="checkbox" id="autoStartCam" checked> تشغيل تلقائي</label>
             <label class="switch"><input type="checkbox" id="autoMark" checked> تسجيل تلقائي</label>
             <label class="switch"><input type="checkbox" id="soundEnabled" checked> 🔊 أصوات</label>
-            <button id="btnTestSound" class="btn ghost" style="padding:6px 12px;font-size:12px">🔔 اختبار الصوت</button>
+            <button id="btnTestSound" class="btn ghost" style="padding:6px 12px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> اختبار الصوت</button>
           </div>
 
           <div class="cam-actions" style="border-top:1px solid var(--border);padding-top:14px">
             <span style="font-size:12.5px;color:var(--muted)">تسجيل يدوي:</span>
             <select id="manualEmp" style="width:auto;min-width:190px"></select>
-            <button id="btnManual" class="btn ghost">تسجيل</button>
+            <button id="btnManual" class="btn ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> تسجيل</button>
           </div>
         </div>
 
         <div class="card result-card">
           <div class="result-empty" id="resultEmpty">
-            <div class="pulse-ring"><span>👤</span></div>
+            <div class="pulse-ring">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22d3ee" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
             <h3>في انتظار التعرف…</h3>
             <p>تأكد من وجود إضاءة جيدة ووجهك داخل الإطار</p>
           </div>
@@ -473,7 +540,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 
       <div class="two-col">
         <div class="card">
-          <h3 class="card-title">➕ إضافة موظف جديد</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> إضافة موظف جديد</h3>
 
           <div class="form-grid">
             <label>الاسم الكامل<input id="empName" placeholder="مثال: أحمد محمد"></label>
@@ -491,13 +558,13 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
           <div class="progress-line"><div id="regBar"></div></div>
 
           <div class="row-btns">
-            <button id="btnRegCapture" class="btn primary">📸 تسجيل بصمة الوجه</button>
-            <button id="btnRegStop" class="btn ghost" disabled>⏹ إيقاف</button>
+            <button id="btnRegCapture" class="btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> تسجيل بصمة الوجه</button>
+            <button id="btnRegStop" class="btn ghost" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="vertical-align:middle"><rect x="4" y="4" width="16" height="16" rx="2"/></svg> إيقاف</button>
           </div>
         </div>
 
         <div class="card">
-          <h3 class="card-title">👥 قائمة الموظفين (<span id="empCount">0</span>)</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> قائمة الموظفين (<span id="empCount">0</span>)</h3>
           <div id="empList" class="emp-list"></div>
         </div>
       </div>
@@ -519,8 +586,8 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
             <option value="in">حضور</option>
             <option value="out">انصراف</option>
           </select>
-          <button id="btnExport" class="btn primary">⬇ تصدير CSV</button>
-          <button id="btnClear" class="btn danger">🗑 حذف الكل</button>
+          <button id="btnExport" class="btn primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير CSV</button>
+          <button id="btnClear" class="btn danger"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> حذف الكل</button>
         </div>
 
         <div class="table-wrap">
@@ -553,12 +620,12 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 
       <div class="two-col">
         <div class="card">
-          <h3 class="card-title">📈 الحضور خلال آخر 7 أيام</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> الحضور خلال آخر 7 أيام</h3>
           <div class="bars" id="chart7"></div>
         </div>
 
         <div class="card">
-          <h3 class="card-title">🕐 تفاصيل حضور اليوم</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> تفاصيل حضور اليوم</h3>
           <div class="table-wrap" style="max-height:330px;overflow-y:auto">
             <table>
               <thead><tr><th>الموظف</th><th>الحضور</th><th>الانصراف</th><th>الحالة</th></tr></thead>
@@ -578,7 +645,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 
       <div class="two-col">
         <div class="card">
-          <h3 class="card-title">🕐 أوقات العمل</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> أوقات العمل</h3>
           <div class="form-grid">
             <label>بداية فترة الحضور (من)<input id="attFrom" type="time" value="08:00"></label>
             <label>نهاية فترة الحضور (إلى — متأخر)<input id="attTo" type="time" value="09:00"></label>
@@ -586,7 +653,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
             <label>نهاية فترة الانصراف (إلى)<input id="depTo" type="time" value="18:00"></label>
           </div>
           <div style="margin-top:14px">
-            <button id="btnSaveTimes" class="btn primary">💾 حفظ الأوقات</button>
+            <button id="btnSaveTimes" class="btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ الأوقات</button>
           </div>
           <p style="margin-top:10px;font-size:12px;color:var(--muted)">
             الحضور قبل أو بعد هذه الأوقات يُ considers متأخراً أو غير صالح
@@ -594,16 +661,16 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
         </div>
 
         <div class="card">
-          <h3 class="card-title">💾 إدارة البيانات</h3>
+          <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> إدارة البيانات</h3>
 
           <div style="display:flex;flex-direction:column;gap:12px">
-            <button id="btnBackup" class="btn primary">📦 تصدير نسخة احتياطية (JSON)</button>
-            <button id="btnRestore" class="btn ghost">📂 استيراد نسخة احتياطية</button>
+            <button id="btnBackup" class="btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> تصدير نسخة احتياطية</button>
+            <button id="btnRestore" class="btn ghost"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg> استيراد نسخة احتياطية</button>
             <input type="file" id="restoreFile" accept=".json" style="display:none">
 
             <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
-              <h3 class="card-title">⚠️ منطقة الخطر</h3>
-              <button id="btnResetAll" class="btn danger">🗑 حذف جميع البيانات (موظفين + سجلات)</button>
+              <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> منطقة الخطر</h3>
+              <button id="btnResetAll" class="btn danger"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> حذف جميع البيانات</button>
             </div>
           </div>
         </div>
@@ -1345,11 +1412,12 @@ function markAttendance(emp, manual=false){
     $('#resType').textContent = '⚠️ تم تسجيل الحضور والانصراف اليوم';
     $('#resType').className = 'res-type out';
     $('#resTime').textContent = 'لا يمكن التسجيل مرة أخرى اليوم';
+    playSoundUnknown();
     return;
   }
 
-  // فحص وقت الحضور
-  if(type === 'in' && !manual){
+  // فحص وقت الحضور (يدوي + تلقائي)
+  if(type === 'in'){
     const nowTime = getNowHHMM();
     if(!isTimeInRange(nowTime, settings.attFrom, settings.attTo)){
       toast('⚠️ خارج فترة الحضور المحددة (' + settings.attFrom + ' - ' + settings.attTo + ')', 'warn', 6000);
@@ -1362,8 +1430,8 @@ function markAttendance(emp, manual=false){
     }
   }
 
-  // فحص وقت الانصراف
-  if(type === 'out' && !manual){
+  // فحص وقت الانصراف (يدوي + تلقائي)
+  if(type === 'out'){
     const nowTime = getNowHHMM();
     if(!isTimeInRange(nowTime, settings.depFrom, settings.depTo)){
       toast('⚠️ خارج فترة الانصراف المحددة (' + settings.depFrom + ' - ' + settings.depTo + ')', 'warn', 6000);
@@ -1589,8 +1657,33 @@ $('#btnManual').addEventListener('click', () => {
   if(!id) return toast('اختر موظفاً أولاً', 'warn');
   const emp = employees.find(e => e.id === id);
   if(!emp) return;
+
+  // فحص: هل سجل حضور وانصراف اليوم؟
+  const today = ymd(new Date());
+  const todaysRecs = records.filter(r => r.empId === emp.id && r.date === today);
+  const hasIn = todaysRecs.some(r => r.type === 'in');
+  const hasOut = todaysRecs.some(r => r.type === 'out');
+
+  if(hasIn && hasOut){
+    toast('⚠️ ' + emp.name + ' سجل حضوره وانصرافه اليوم بالفعل', 'warn');
+    playSoundUnknown();
+    return;
+  }
+
+  // فحص الوقت قبل التسجيل
+  const nowTime = getNowHHMM();
+  if(!hasIn && !isTimeInRange(nowTime, settings.attFrom, settings.attTo)){
+    toast('⚠️ خارج فترة الحضور (' + settings.attFrom + ' - ' + settings.attTo + ')', 'warn', 6000);
+    playSoundUnknown();
+    return;
+  }
+  if(hasIn && !hasOut && !isTimeInRange(nowTime, settings.depFrom, settings.depTo)){
+    toast('⚠️ خارج فترة الانصراف (' + settings.depFrom + ' - ' + settings.depTo + ')', 'warn', 6000);
+    playSoundUnknown();
+    return;
+  }
+
   markAttendance(emp, true);
-  flashResult(emp, records[records.length - 1].type, new Date());
 });
 
 /* =========================================================
@@ -1740,7 +1833,7 @@ function renderEmployees(){
         <strong>${escapeHtml(e.name)}</strong>
         <span>${escapeHtml(e.code || '—')} · ${escapeHtml(e.dept || '—')}</span>
       </div>
-      <button class="icon-btn" data-del="${e.id}" title="حذف">🗑</button>
+      <button class="icon-btn" data-del="${e.id}" title="حذف"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
     </div>
   `).join('');
 
