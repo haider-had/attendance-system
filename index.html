@@ -1,0 +1,1705 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>نظام الحضور والانصراف بالتعرف على الوجه</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#070b14; --panel:#0d1424; --card:rgba(255,255,255,.045);
+  --border:rgba(255,255,255,.09); --text:#e9eefb; --muted:#8496b8;
+  --accent:#22d3ee; --accent2:#6366f1;
+  --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+  --radius:18px;
+}
+html,body{height:100%}
+body{
+  font-family:'Cairo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:
+    radial-gradient(1200px 600px at 90% -10%, rgba(99,102,241,.20), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, rgba(34,211,238,.14), transparent 55%),
+    var(--bg);
+  color:var(--text); min-height:100vh; overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:9px}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.22)}
+.hidden{display:none !important}
+
+/* ============ التحميل ============ */
+.loader-overlay{
+  position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,8,15,.94);backdrop-filter:blur(14px);transition:opacity .5s;
+}
+.loader-overlay.done{opacity:0;pointer-events:none}
+.loader-box{text-align:center;width:min(420px,88vw)}
+.spinner{
+  width:70px;height:70px;margin:0 auto 22px;border-radius:50%;
+  border:3px solid rgba(255,255,255,.08);border-top-color:var(--accent);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-box h2{font-size:19px;font-weight:700;margin-bottom:8px}
+.loader-box p{color:var(--muted);font-size:14px;margin-bottom:18px}
+.progress{height:7px;background:rgba(255,255,255,.08);border-radius:9px;overflow:hidden}
+.progress > div{height:100%;width:0;border-radius:9px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
+
+/* ============ الهيكل ============ */
+.app{display:grid;grid-template-columns:262px 1fr;min-height:100vh}
+
+.sidebar{
+  position:sticky;top:0;height:100vh;padding:22px 16px;
+  background:rgba(10,16,28,.72);backdrop-filter:blur(20px);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;gap:22px;
+}
+.brand{display:flex;align-items:center;gap:12px;padding:6px 8px}
+.logo{
+  width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 8px 26px rgba(34,211,238,.35);
+}
+.brand h1{font-size:19px;font-weight:900;letter-spacing:-.3px}
+.brand span{font-size:11.5px;color:var(--muted);display:block;margin-top:1px}
+
+nav{display:flex;flex-direction:column;gap:6px;flex:1}
+.nav-btn{
+  display:flex;align-items:center;gap:11px;width:100%;padding:13px 15px;border:0;cursor:pointer;
+  background:transparent;color:var(--muted);font-family:inherit;font-size:14.5px;font-weight:600;
+  border-radius:13px;transition:.22s;text-align:right;
+}
+.nav-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
+.nav-btn.active{
+  background:linear-gradient(90deg,rgba(34,211,238,.16),rgba(99,102,241,.10));
+  color:#fff;box-shadow:inset 0 0 0 1px rgba(34,211,238,.28);
+}
+.sidebar-foot{
+  padding:14px;border-radius:14px;background:rgba(255,255,255,.035);
+  border:1px solid var(--border);text-align:center;
+}
+.clock{font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--accent)}
+.date{font-size:11.5px;color:var(--muted);margin-top:3px}
+
+.main{padding:28px 30px 60px;max-width:1500px;width:100%}
+.tab{display:none;animation:fade .35s ease}
+.tab.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+.page-head{margin-bottom:22px}
+.page-head h2{font-size:26px;font-weight:900;letter-spacing:-.5px}
+.page-head p{color:var(--muted);font-size:14px;margin-top:5px}
+
+/* ============ الكروت ============ */
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;backdrop-filter:blur(12px);
+  box-shadow:0 16px 44px rgba(0,0,0,.30);
+}
+.card-title{font-size:16px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+.scan-grid{display:grid;grid-template-columns:1.35fr 1fr;gap:20px;align-items:start}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+
+/* ============ الكاميرا ============ */
+.cam-wrap{
+  position:relative;width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;
+  background:#05080f;border:1px solid var(--border);transition:box-shadow .4s;
+}
+.cam-wrap.small{aspect-ratio:4/3;margin:14px 0}
+.cam-wrap video,.cam-wrap canvas{position:absolute;inset:0;width:100%;height:100%;object-fit:fill}
+.cam-wrap canvas{pointer-events:none}
+.mirror{transform:scaleX(-1)}
+.cam-badge{
+  position:absolute;top:12px;right:12px;z-index:3;font-size:11.5px;font-weight:700;
+  padding:6px 12px;border-radius:99px;background:rgba(0,0,0,.55);backdrop-filter:blur(8px);
+  border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:6px;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);animation:blink 1.6s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.cam-hint{
+  position:absolute;inset:0;display:grid;place-items:center;z-index:2;
+  color:var(--muted);font-size:13.5px;background:#05080f;text-align:center;padding:20px;
+}
+.cam-hint .loading-dots{display:flex;gap:8px;margin-top:16px;justify-content:center}
+.cam-hint .loading-dots span{
+  width:10px;height:10px;border-radius:50%;background:var(--accent);
+  animation:dotBounce 1.4s ease-in-out infinite both;
+}
+.cam-hint .loading-dots span:nth-child(1){animation-delay:-.32s}
+.cam-hint .loading-dots span:nth-child(2){animation-delay:-.16s}
+@keyframes dotBounce{0%,80%,100%{transform:scale(.4);opacity:.3}40%{transform:scale(1);opacity:1}}
+.cam-hint .cam-start-btn{
+  margin-top:18px;padding:10px 28px;border:0;border-radius:12px;cursor:pointer;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121a;
+  font-family:inherit;font-size:14px;font-weight:800;
+  box-shadow:0 8px 22px rgba(34,211,238,.3);transition:.2s;
+}
+.cam-hint .cam-start-btn:hover{filter:brightness(1.12);transform:scale(1.03)}
+.cam-hint .cam-start-btn:active{transform:scale(.97)}
+.cam-select{
+  font-family:inherit;font-size:13px;padding:8px 12px;border-radius:10px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);
+  outline:none;min-width:170px;
+}
+.cam-select:focus{border-color:rgba(34,211,238,.55)}
+.cam-actions,.row-btns{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+
+/* ============ الأزرار ============ */
+.btn{
+  font-family:inherit;font-size:14px;font-weight:700;padding:11px 20px;border-radius:12px;
+  border:1px solid transparent;cursor:pointer;transition:.2s;display:inline-flex;
+  align-items:center;gap:8px;white-space:nowrap;
+}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121a;
+  box-shadow:0 10px 26px rgba(34,211,238,.28)}
+.btn.primary:hover{filter:brightness(1.1)}
+.btn.ghost{background:rgba(255,255,255,.05);color:var(--text);border-color:var(--border)}
+.btn.ghost:hover{background:rgba(255,255,255,.1)}
+.btn.danger{background:rgba(239,68,68,.13);color:#fca5a5;border-color:rgba(239,68,68,.32)}
+.btn.danger:hover{background:rgba(239,68,68,.22)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.switch{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--muted);cursor:pointer;user-select:none}
+.switch input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer}
+
+/* ============ نتيجة التعرف ============ */
+.result-card{display:flex;flex-direction:column;gap:18px;min-height:420px}
+.result-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:20px 0}
+.result-empty h3{font-size:17px;font-weight:700}
+.result-empty p{color:var(--muted);font-size:13.5px}
+.pulse-ring{
+  width:104px;height:104px;border-radius:50%;display:grid;place-items:center;font-size:42px;
+  background:rgba(34,211,238,.08);border:2px solid rgba(34,211,238,.28);
+  animation:pulse 2.2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 0 0 0 rgba(34,211,238,.28)}
+  50%{transform:scale(1.05);box-shadow:0 0 0 22px rgba(34,211,238,0)}}
+
+.result-data{display:flex;flex-direction:column;gap:16px;animation:fade .35s}
+.res-top{display:flex;align-items:center;gap:15px}
+.res-top img{width:82px;height:82px;border-radius:18px;object-fit:cover;border:2px solid rgba(34,211,238,.45)}
+.res-top h3{font-size:20px;font-weight:900}
+.res-top p{color:var(--muted);font-size:13px;margin-top:4px}
+.res-type{
+  padding:14px;border-radius:14px;text-align:center;font-size:19px;font-weight:900;letter-spacing:-.3px;
+}
+.res-type.in{background:rgba(34,197,94,.14);color:#4ade80;border:1px solid rgba(34,197,94,.32)}
+.res-type.out{background:rgba(245,158,11,.14);color:#fbbf24;border:1px solid rgba(245,158,11,.32)}
+.res-type.unknown{background:rgba(239,68,68,.13);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+.res-time{text-align:center;font-size:14px;color:var(--muted)}
+
+.recent{border-top:1px solid var(--border);padding-top:16px;margin-top:auto}
+.recent h4{font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:700}
+.recent ul{list-style:none;display:flex;flex-direction:column;gap:7px;max-height:170px;overflow-y:auto}
+.recent li{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px;
+  padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.035);
+}
+.recent li b{font-weight:700}
+.recent li span{color:var(--muted);font-size:11.5px;white-space:nowrap}
+
+/* ============ النماذج ============ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:flex;flex-direction:column;gap:7px;font-size:12.5px;color:var(--muted);font-weight:600}
+input,select{
+  font-family:inherit;font-size:14px;padding:11px 14px;border-radius:11px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text);
+  outline:none;transition:.2s;width:100%;
+}
+input:focus,select:focus{border-color:rgba(34,211,238,.55);background:rgba(34,211,238,.06)}
+input::placeholder{color:#54658a}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(.7)}
+
+.progress-line{height:6px;border-radius:9px;background:rgba(255,255,255,.07);overflow:hidden}
+.progress-line > div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+
+/* ============ قائمة الموظفين ============ */
+.emp-list{display:flex;flex-direction:column;gap:10px;max-height:560px;overflow-y:auto;padding-left:4px}
+.emp-item{
+  display:flex;align-items:center;gap:12px;padding:11px;border-radius:14px;
+  background:rgba(255,255,255,.035);border:1px solid var(--border);transition:.2s;
+}
+.emp-item:hover{background:rgba(255,255,255,.07);transform:translateX(-3px)}
+.emp-item img,.emp-avatar{
+  width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;
+  display:grid;place-items:center;font-weight:900;font-size:17px;color:#04121a;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+}
+.emp-info{flex:1;min-width:0}
+.emp-info strong{font-size:14.5px;font-weight:700;display:block}
+.emp-info span{font-size:11.5px;color:var(--muted)}
+.icon-btn{
+  width:36px;height:36px;border-radius:10px;border:1px solid var(--border);cursor:pointer;
+  background:rgba(239,68,68,.1);color:#fca5a5;font-size:15px;transition:.2s;flex-shrink:0;
+}
+.icon-btn:hover{background:rgba(239,68,68,.24)}
+.empty-state{text-align:center;padding:40px 16px;color:var(--muted);font-size:13.5px}
+
+/* ============ الجداول ============ */
+.toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.toolbar input,.toolbar select{width:auto;min-width:150px;flex:0 0 auto}
+.table-wrap{overflow-x:auto;border-radius:14px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+thead{background:rgba(255,255,255,.05)}
+th{padding:13px 15px;text-align:right;font-weight:700;color:var(--muted);font-size:12.5px;white-space:nowrap}
+td{padding:12px 15px;border-top:1px solid var(--border);white-space:nowrap}
+tbody tr{transition:.15s}
+tbody tr:hover{background:rgba(255,255,255,.035)}
+.pill{padding:4px 12px;border-radius:99px;font-size:11.5px;font-weight:800;display:inline-block}
+.pill.in{background:rgba(34,197,94,.16);color:#4ade80}
+.pill.out{background:rgba(245,158,11,.16);color:#fbbf24}
+
+/* ============ الإحصائيات ============ */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.stat{
+  padding:20px;border-radius:var(--radius);border:1px solid var(--border);background:var(--card);
+  position:relative;overflow:hidden;box-shadow:0 14px 34px rgba(0,0,0,.26);
+}
+.stat::after{content:'';position:absolute;top:-40px;left:-40px;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle,rgba(34,211,238,.20),transparent 70%)}
+.stat .lbl{font-size:12.5px;color:var(--muted);font-weight:600;margin-bottom:9px;position:relative}
+.stat .val{font-size:34px;font-weight:900;letter-spacing:-1.5px;position:relative}
+.stat.g .val{color:#4ade80}.stat.y .val{color:#fbbf24}
+.stat.r .val{color:#f87171}.stat.c .val{color:var(--accent)}
+
+.bars{display:flex;align-items:flex-end;gap:12px;height:190px;padding:16px 6px 0}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:9px;height:100%;justify-content:flex-end}
+.bar{width:100%;max-width:52px;border-radius:9px 9px 4px 4px;background:linear-gradient(180deg,var(--accent),var(--accent2));
+  min-height:5px;transition:height .6s cubic-bezier(.34,1.4,.64,1)}
+.bar-col span{font-size:11px;color:var(--muted);white-space:nowrap}
+.bar-col b{font-size:12.5px;font-weight:800}
+
+/* ============ التنبيهات ============ */
+#toasts{position:fixed;bottom:24px;left:24px;z-index:900;display:flex;flex-direction:column;gap:10px}
+.toast{
+  padding:13px 20px;border-radius:13px;font-size:13.5px;font-weight:700;color:#fff;
+  background:rgba(20,28,45,.96);border:1px solid var(--border);backdrop-filter:blur(12px);
+  box-shadow:0 14px 36px rgba(0,0,0,.45);opacity:0;transform:translateY(14px);transition:.3s;
+  border-right:3px solid var(--accent);max-width:420px;
+}
+.toast.show{opacity:1;transform:none}
+.toast.ok{border-right-color:var(--ok)}
+.toast.warn{border-right-color:var(--warn)}
+.toast.danger{border-right-color:var(--danger)}
+
+.warn-banner{
+  padding:12px 16px;border-radius:13px;background:rgba(245,158,11,.11);
+  border:1px solid rgba(245,158,11,.3);color:#fcd34d;font-size:13px;margin-bottom:16px;font-weight:600;
+  line-height:1.6;position:relative;
+}
+.warn-banner .dismiss-warn{
+  position:absolute;top:8px;left:8px;background:rgba(255,255,255,.1);border:0;
+  color:#fcd34d;width:28px;height:28px;border-radius:8px;cursor:pointer;font-size:16px;
+  display:grid;place-items:center;
+}
+.warn-banner .dismiss-warn:hover{background:rgba(255,255,255,.2)}
+.warn-banner code{
+  background:rgba(0,0,0,.35);padding:2px 8px;border-radius:6px;font-family:monospace;
+  font-size:12.5px;direction:ltr;display:inline-block;
+}
+
+/* ============ الاستجابة ============ */
+@media(max-width:1150px){
+  .scan-grid,.two-col{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:860px){
+  .app{grid-template-columns:1fr}
+  .sidebar{
+    position:fixed;bottom:0;top:auto;left:0;right:0;width:100%;height:auto;
+    flex-direction:row;align-items:center;gap:8px;padding:9px 10px;z-index:80;
+    border-left:0;border-top:1px solid var(--border);
+  }
+  .brand,.sidebar-foot{display:none}
+  nav{flex-direction:row;overflow-x:auto;gap:5px}
+  .nav-btn{flex-direction:column;gap:4px;font-size:11px;padding:8px 12px;white-space:nowrap}
+  .main{padding:20px 16px 110px}
+  .page-head h2{font-size:21px}
+  .form-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .stat .val{font-size:27px}
+  #toasts{left:12px;right:12px;bottom:88px}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== شاشة التحميل ===== -->
+<div class="loader-overlay" id="loader">
+  <div class="loader-box">
+    <div class="spinner"></div>
+    <h2>جارٍ تهيئة محرك التعرف على الوجه</h2>
+    <p id="loaderMsg">تحضير النماذج…</p>
+    <div class="progress"><div id="loaderBar"></div></div>
+  </div>
+</div>
+
+<!-- ===== التطبيق ===== -->
+<div class="app">
+
+  <!-- الشريط الجانبي -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="logo">👤</div>
+      <div>
+        <h1>حضور</h1>
+        <span>نظام التعرف على الوجه</span>
+      </div>
+    </div>
+
+    <nav>
+      <button class="nav-btn active" data-tab="scan">📷 تسجيل الحضور</button>
+      <button class="nav-btn" data-tab="employees">👥 الموظفون</button>
+      <button class="nav-btn" data-tab="records">📋 السجلات</button>
+      <button class="nav-btn" data-tab="reports">📊 التقارير</button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="clock" id="liveClock">--:--</div>
+      <div class="date" id="liveDate">—</div>
+    </div>
+  </aside>
+
+  <!-- المحتوى -->
+  <main class="main">
+
+    <!-- ============ تبويب الحضور ============ -->
+    <section id="tab-scan" class="tab active">
+      <div class="page-head">
+        <h2>تسجيل الحضور والانصراف</h2>
+        <p>قف أمام الكاميرا مباشرةً — سيتم التعرف على وجهك وتسجيل الحركة تلقائياً</p>
+      </div>
+
+      <div id="scanWarn" class="warn-banner hidden"></div>
+
+      <div class="scan-grid">
+        <div class="card">
+          <div class="cam-wrap" id="scanWrap">
+            <video id="scanVideo" autoplay muted playsinline class="mirror"></video>
+            <canvas id="scanCanvas" class="mirror"></canvas>
+            <div class="cam-badge"><span class="dot"></span><span id="camBadgeTxt">الكاميرا متوقفة</span></div>
+            <div class="cam-hint" id="scanHint">
+              <div>
+                <div style="font-size:42px;margin-bottom:10px">📷</div>
+                <div>اضغط للبدء أو انتظر التشغيل التلقائي</div>
+                <div class="loading-dots" id="scanDots" style="display:none"><span></span><span></span><span></span></div>
+                <button class="cam-start-btn" id="scanHintBtn">▶ تشغيل الكاميرا</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cam-actions">
+            <button id="btnStartScan" class="btn primary">▶ تشغيل الكاميرا</button>
+            <button id="btnStopScan" class="btn ghost" disabled>⏹ إيقاف</button>
+            <select id="cameraSelect" class="cam-select" title="اختيار الكاميرا">
+              <option value="user">📷 الكاميرا الأمامية</option>
+              <option value="environment">📷 الكاميرا الخلفية</option>
+            </select>
+            <label class="switch"><input type="checkbox" id="autoStartCam" checked> تشغيل تلقائي</label>
+            <label class="switch"><input type="checkbox" id="autoMark" checked> تسجيل تلقائي</label>
+            <label class="switch"><input type="checkbox" id="soundEnabled" checked> 🔊 أصوات</label>
+            <button id="btnTestSound" class="btn ghost" style="padding:6px 12px;font-size:12px">🔔 اختبار الصوت</button>
+          </div>
+
+          <div class="cam-actions" style="border-top:1px solid var(--border);padding-top:14px">
+            <span style="font-size:12.5px;color:var(--muted)">تسجيل يدوي:</span>
+            <select id="manualEmp" style="width:auto;min-width:190px"></select>
+            <button id="btnManual" class="btn ghost">تسجيل</button>
+          </div>
+        </div>
+
+        <div class="card result-card">
+          <div class="result-empty" id="resultEmpty">
+            <div class="pulse-ring"><span>👤</span></div>
+            <h3>في انتظار التعرف…</h3>
+            <p>تأكد من وجود إضاءة جيدة ووجهك داخل الإطار</p>
+          </div>
+
+          <div class="result-data hidden" id="resultData">
+            <div class="res-top">
+              <img id="resPhoto" alt="صورة الموظف">
+              <div>
+                <h3 id="resName">—</h3>
+                <p id="resMeta">—</p>
+              </div>
+            </div>
+            <div class="res-type" id="resType">—</div>
+            <div class="res-time" id="resTime">—</div>
+          </div>
+
+          <div class="recent">
+            <h4>آخر العمليات</h4>
+            <ul id="recentList"></ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ تبويب الموظفين ============ -->
+    <section id="tab-employees" class="tab">
+      <div class="page-head">
+        <h2>إدارة الموظفين</h2>
+        <p>أضف بيانات الموظف ثم سجّل بصمة وجهه لاستخدامها في التعرف التلقائي</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3 class="card-title">➕ إضافة موظف جديد</h3>
+
+          <div class="form-grid">
+            <label>الاسم الكامل<input id="empName" placeholder="مثال: أحمد محمد"></label>
+            <label>الرقم الوظيفي<input id="empCode" placeholder="EMP-001"></label>
+            <label>القسم<input id="empDept" placeholder="تقنية المعلومات"></label>
+            <label>المسمى الوظيفي<input id="empJob" placeholder="مطوّر برمجيات"></label>
+          </div>
+
+          <div class="cam-wrap small" id="regWrap">
+            <video id="regVideo" autoplay muted playsinline class="mirror"></video>
+            <canvas id="regCanvas" class="mirror"></canvas>
+            <div class="cam-hint" id="regHint">الكاميرا متوقفة — اضغط «تسجيل بصمة الوجه»</div>
+          </div>
+
+          <div class="progress-line"><div id="regBar"></div></div>
+
+          <div class="row-btns">
+            <button id="btnRegCapture" class="btn primary">📸 تسجيل بصمة الوجه</button>
+            <button id="btnRegStop" class="btn ghost" disabled>⏹ إيقاف</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">👥 قائمة الموظفين (<span id="empCount">0</span>)</h3>
+          <div id="empList" class="emp-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ تبويب السجلات ============ -->
+    <section id="tab-records" class="tab">
+      <div class="page-head">
+        <h2>سجلات الحضور والانصراف</h2>
+        <p>استعرض، ابحث، وصدّر السجلات بصيغة CSV</p>
+      </div>
+
+      <div class="card">
+        <div class="toolbar">
+          <input type="date" id="filterDate">
+          <input type="search" id="searchName" placeholder="🔍 بحث بالاسم…">
+          <select id="filterType">
+            <option value="">كل الحركات</option>
+            <option value="in">حضور</option>
+            <option value="out">انصراف</option>
+          </select>
+          <button id="btnExport" class="btn primary">⬇ تصدير CSV</button>
+          <button id="btnClear" class="btn danger">🗑 حذف الكل</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>الموظف</th><th>الرقم الوظيفي</th><th>القسم</th>
+                <th>الحركة</th><th>التاريخ</th><th>الوقت</th>
+              </tr>
+            </thead>
+            <tbody id="recordsBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ تبويب التقارير ============ -->
+    <section id="tab-reports" class="tab">
+      <div class="page-head">
+        <h2>التقارير والإحصائيات</h2>
+        <p id="reportDateLbl">—</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat c"><div class="lbl">إجمالي الموظفين</div><div class="val" id="stTotal">0</div></div>
+        <div class="stat g"><div class="lbl">الحاضرون اليوم</div><div class="val" id="stPresent">0</div></div>
+        <div class="stat y"><div class="lbl">المتأخرون</div><div class="val" id="stLate">0</div></div>
+        <div class="stat r"><div class="lbl">الغائبون</div><div class="val" id="stAbsent">0</div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3 class="card-title">📈 الحضور خلال آخر 7 أيام</h3>
+          <div class="bars" id="chart7"></div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">🕐 تفاصيل حضور اليوم</h3>
+          <div class="table-wrap" style="max-height:330px;overflow-y:auto">
+            <table>
+              <thead><tr><th>الموظف</th><th>الحضور</th><th>الانصراف</th><th>الحالة</th></tr></thead>
+              <tbody id="todayBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+/* =========================================================
+   أدوات مساعدة
+   ========================================================= */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const ymd = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+
+const fmtTime = iso => new Date(iso).toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'});
+const fmtDate = iso => new Date(iso).toLocaleDateString('ar-EG', {year:'numeric', month:'2-digit', day:'2-digit'});
+
+function toast(msg, type='ok', duration=4000){
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  requestAnimationFrame(()=> t.classList.add('show'));
+  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(), 320); }, duration);
+}
+
+/* =========================================================
+   الأصوات (Web Audio API)
+   ========================================================= */
+let audioCtx = null;
+let audioUnlocked = false;
+
+function unlockAudio(){
+  if(audioUnlocked) return;
+  try{
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    audioUnlocked = true;
+    document.removeEventListener('click', unlockAudio);
+    document.removeEventListener('touchstart', unlockAudio);
+  }catch(e){}
+}
+
+document.addEventListener('click', unlockAudio, { once: false });
+document.addEventListener('touchstart', unlockAudio, { once: false });
+
+function getAudioCtx(){
+  if(!audioCtx){
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playBeep(freq, duration, vol=0.3, type='sine'){
+  try{
+    const ctx = getAudioCtx();
+    if(ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(vol, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration);
+  }catch(e){ console.warn('Sound error:', e); }
+}
+
+function playSoundIn(){
+  if(!$('#soundEnabled').checked) return;
+  playBeep(880, 0.12, 0.35);
+  setTimeout(()=> playBeep(1100, 0.15, 0.35), 130);
+  setTimeout(()=> playBeep(1320, 0.2, 0.3), 280);
+}
+
+function playSoundOut(){
+  if(!$('#soundEnabled').checked) return;
+  playBeep(660, 0.15, 0.3);
+  setTimeout(()=> playBeep(520, 0.2, 0.3), 160);
+}
+
+function playSoundUnknown(){
+  if(!$('#soundEnabled').checked) return;
+  playBeep(300, 0.15, 0.25, 'square');
+  setTimeout(()=> playBeep(250, 0.2, 0.25, 'square'), 180);
+  setTimeout(()=> playBeep(200, 0.25, 0.2, 'square'), 380);
+}
+
+function playSoundRegister(){
+  if(!$('#soundEnabled').checked) return;
+  playBeep(523, 0.1, 0.3);
+  setTimeout(()=> playBeep(659, 0.1, 0.3), 110);
+  setTimeout(()=> playBeep(784, 0.1, 0.3), 220);
+  setTimeout(()=> playBeep(1047, 0.2, 0.3), 330);
+}
+
+/* =========================================================
+   الصوت النصي (Speech Synthesis)
+   ========================================================= */
+let arVoice = null;
+let voicesLoaded = false;
+
+function loadVoices(){
+  if(voicesLoaded) return;
+  const voices = window.speechSynthesis.getVoices();
+  arVoice = voices.find(v => v.lang.startsWith('ar')) || null;
+  voicesLoaded = true;
+}
+
+if('speechSynthesis' in window){
+  loadVoices();
+  speechSynthesis.onvoiceschanged = () => loadVoices();
+}
+
+function speakArabic(text){
+  if(!$('#soundEnabled').checked) return;
+  if(!('speechSynthesis' in window)) return;
+  try{
+    loadVoices();
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ar-SA';
+    u.rate = 1.1;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+    if(arVoice) u.voice = arVoice;
+    window.speechSynthesis.speak(u);
+  }catch(e){ console.warn('Speech error:', e); }
+}
+
+/* =========================================================
+   التخزين
+   ========================================================= */
+const KEY_EMP = 'attendance_employees_v1';
+const KEY_REC = 'attendance_records_v1';
+
+let employees = JSON.parse(localStorage.getItem(KEY_EMP) || '[]');
+let records   = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
+
+const saveEmp = () => localStorage.setItem(KEY_EMP, JSON.stringify(employees));
+const saveRec = () => localStorage.setItem(KEY_REC, JSON.stringify(records));
+
+/* =========================================================
+   الساعة
+   ========================================================= */
+function tickClock(){
+  const now = new Date();
+  $('#liveClock').textContent = now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit', hour12:true});
+  $('#liveDate').textContent  = now.toLocaleDateString('ar-EG', {weekday:'long', day:'numeric', month:'long'});
+}
+setInterval(tickClock, 1000); tickClock();
+
+/* =========================================================
+   فحص بيئة التشغيل
+   ========================================================= */
+function diagnoseEnvironment(){
+  const issues = [];
+
+  if(!window.isSecureContext){
+    issues.push('بيئة غير آمنة');
+  }
+
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    issues.push('navigator.mediaDevices غير مدعوم');
+  }
+
+  if(/telegram|tg|content:\/\//i.test(navigator.userAgent + ' ' + location.href)){
+    issues.push('متصفح تليجرام الداخلي');
+  }
+  if(/wv|webview|FBAN|FBAV|Instagram|Line|WhatsApp|Snapchat/i.test(navigator.userAgent)){
+    issues.push('متصفح داخل تطبيق');
+  }
+
+  return issues;
+}
+
+function showSecureContextWarning(){
+  const warn = $('#scanWarn');
+  warn.classList.remove('hidden');
+
+  const isTelegram = /telegram|tg|content:\/\//i.test(navigator.userAgent + ' ' + location.href);
+  const isInApp = /wv|webview|FBAN|FBAV|Instagram|Line|WhatsApp|Snapchat/i.test(navigator.userAgent);
+  const isFile = location.protocol === 'file:' || /content:\/\//.test(location.href);
+
+  let html = '';
+
+  if(isTelegram || isInApp || isFile){
+    html = `
+      <button class="dismiss-warn" onclick="this.parentElement.classList.add('hidden')">✕</button>
+      ⚠️ <b>المشكلة:</b> أنت تفتح الصفحة من داخل تطبيق (تليجرام / واتساب / فيسبوك / متصفح داخلي).<br>
+      هذه التطبيقات <b>تمنع الكاميرا</b> لأسباب أمنية.<br><br>
+      ✅ <b>الحل — افتح الصفحة في المتصفح الخارجي:</b><br><br>
+      <b>📱 أندرويد:</b><br>
+      1. اضغط على أيقونة <b>⋮</b> (نقاط ثلاث) أعلى اليمين<br>
+      2. اختر <b>«فتح في Chrome»</b> أو <b>«فتح في متصفح خارجي»</b><br><br>
+      <b>🍎 آيفون:</b><br>
+      1. اضغط على زر <b>المشاركة</b> (مربع بسهم لأعلى)<br>
+      2. اختر <b>«فتح في Safari»</b><br><br>
+      <b>🖥 الكمبيوتر:</b><br>
+      افتح الملف مباشرة في Chrome أو Edge<br><br>
+      <b>💡 بديل آخر (الأسهل):</b><br>
+      ارفع الملف على أي خادم ويب (مثل GitHub Pages) وافتحه برابط <code dir="ltr">https://</code>
+    `;
+  } else {
+    html = `
+      <button class="dismiss-warn" onclick="this.parentElement.classList.add('hidden')">✕</button>
+      ⚠️ <b>تنبيه:</b> أنت تفتح الصفحة بطريقة لا تسمح للمتصفح بالوصول إلى الكاميرا.<br><br>
+      <b>الحل:</b> افتح الصفحة عبر خادم محلي بدل فتح الملف مباشرة.<br><br>
+      <b>الطريقة الأسهل (Python):</b><br>
+      افتح الطرفية في مجلد الملف واكتب:<br>
+      <code dir="ltr">python -m http.server 8000</code><br><br>
+      ثم افتح المتصفح على:<br>
+      <code dir="ltr">http://localhost:8000/attendance.html</code><br><br>
+      <b>بدائل:</b> استخدم إضافة <b>Live Server</b> في VS Code، أو أي خادم آخر.<br>
+      ملاحظة: بروتوكول <code dir="ltr">file://</code> مرفوض من جميع المتصفحات الحديثة لأسباب أمنية.
+    `;
+  }
+
+  warn.innerHTML = html;
+}
+
+/* =========================================================
+   التنقل بين التبويبات
+   ========================================================= */
+function switchTab(name){
+  $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
+
+  if(name !== 'scan')      stopScanCamera();
+  if(name !== 'employees') stopCamera('reg',  $('#regVideo'),  $('#regHint'));
+
+  if(name === 'records')  renderRecords();
+  if(name === 'reports')  renderReports();
+  if(name === 'employees'){ renderEmployees(); fillManualSelect(); }
+  if(name === 'scan')     fillManualSelect();
+}
+$$('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+
+/* =========================================================
+   إدارة الكاميرا (محسّنة مع دعم اختيار الكاميرا)
+   ========================================================= */
+const streams = {};
+
+async function enumerateCameras(){
+  try{
+    if(!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return [];
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    return devices.filter(d => d.kind === 'videoinput');
+  }catch(e){ return []; }
+}
+
+async function populateCameraSelect(){
+  const sel = $('#cameraSelect');
+  const cameras = await enumerateCameras();
+  if(cameras.length <= 1) return;
+  sel.innerHTML = '';
+  cameras.forEach((cam, i) => {
+    const opt = document.createElement('option');
+    opt.value = cam.deviceId;
+    opt.textContent = cam.label || ('كاميرا ' + (i + 1));
+    sel.appendChild(opt);
+  });
+}
+
+function setCameraLoading(video, hintEl, show){
+  const dots = $('#scanDots');
+  const btn = $('#scanHintBtn');
+  if(show){
+    if(hintEl) hintEl.classList.remove('hidden');
+    if(dots) dots.style.display = 'flex';
+    if(btn) btn.style.display = 'none';
+  }else{
+    if(dots) dots.style.display = 'none';
+  }
+}
+
+async function startCamera(video, key, hintEl){
+  if(streams[key]) return true;
+
+  // 1) فحص دعم المتصفح
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('متصفحك لا يدعم الكاميرا — استخدم Chrome أو Edge أو Firefox حديث', 'danger', 7000);
+    return false;
+  }
+
+  // 2) فحص سياق الأمان (HTTPS / localhost)
+  if(!window.isSecureContext){
+    toast('يجب فتح الصفحة عبر HTTPS أو localhost وليس file://', 'danger', 8000);
+    showSecureContextWarning();
+    console.error('[Camera] isSecureContext = false → السبب: فتح الملف مباشرة عبر file://');
+    return false;
+  }
+
+  setCameraLoading(video, hintEl, true);
+
+  // 3) محاولة فتح الكاميرا
+  const selectedVal = key === 'scan' ? ($('#cameraSelect') ? $('#cameraSelect').value : 'user') : 'user';
+  const isDeviceId = selectedVal && selectedVal !== 'user' && selectedVal !== 'environment';
+
+  try{
+    const constraints = isDeviceId
+      ? { video: { deviceId: { exact: selectedVal }, width:{ideal:1280}, height:{ideal:720} }, audio: false }
+      : { video: { width:{ideal:1280}, height:{ideal:720}, facingMode: selectedVal }, audio: false };
+
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    streams[key] = stream;
+    video.srcObject = stream;
+    await video.play().catch(()=>{});
+    if(hintEl) hintEl.classList.add('hidden');
+    setCameraLoading(video, hintEl, false);
+    if(key === 'scan') populateCameraSelect();
+    return true;
+
+  }catch(err){
+    console.error('[Camera] Error:', err.name, err.message);
+    setCameraLoading(video, hintEl, false);
+
+    // 4) رسائل دقيقة حسب نوع الخطأ
+    let msg = 'تعذّر الوصول إلى الكاميرا';
+
+    switch(err.name){
+      case 'NotAllowedError':
+      case 'PermissionDeniedError':
+        if(/telegram|tg|content:\/\//i.test(navigator.userAgent + ' ' + location.href)){
+          msg = '❌ الكاميرا محظورة — أنت في متصفح تليجرام الداخلي. اضغط ⋮ ثم «فتح في Chrome»';
+        }else if(/wv|webview|FBAN|FBAV|Instagram|Line|WhatsApp/i.test(navigator.userAgent)){
+          msg = '❌ الكاميرا محظورة — أنت في متصفح داخل تطبيق. افتح الصفحة في Chrome أو Safari';
+        }else{
+          msg = '❌ صلاحية الكاميرا مرفوضة — اضغط أيقونة القفل 🔒 بجانب العنوان واسمح بالكاميرا، ثم أعد التحميل';
+        }
+        break;
+      case 'NotFoundError':
+      case 'DevicesNotFoundError':
+        msg = '❌ لم يتم العثور على كاميرا متصلة بالجهاز';
+        break;
+      case 'NotReadableError':
+      case 'TrackStartError':
+        msg = '❌ الكاميرا مستخدمة من تطبيق آخر (Zoom/Teams/OBS) — أغلقه ثم أعد المحاولة';
+        break;
+      case 'OverconstrainedError':
+        toast('⚠ دقة الكاميرا غير مدعومة — يتم تجربة الإعداد الافتراضي…', 'warn', 3000);
+        try{
+          const s2 = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+          streams[key] = s2;
+          video.srcObject = s2;
+          await video.play().catch(()=>{});
+          if(hintEl) hintEl.classList.add('hidden');
+          toast('✅ تم تشغيل الكاميرا بالإعداد الافتراضي', 'ok');
+          return true;
+        }catch(e2){
+          console.error('[Camera] Fallback error:', e2);
+          msg = '❌ فشلت المحاولة الثانية أيضاً: ' + e2.name;
+        }
+        break;
+      case 'SecurityError':
+        msg = '❌ خطأ أمني — تأكد من أن الصفحة على HTTPS';
+        break;
+      case 'AbortError':
+        msg = '❌ تم إلغاء تشغيل الكاميرا';
+        break;
+    }
+
+    toast(msg, 'danger', 8000);
+    return false;
+  }
+}
+
+function stopCamera(key, video, hintEl){
+  if(streams[key]){
+    streams[key].getTracks().forEach(t => t.stop());
+    delete streams[key];
+  }
+  if(video) video.srcObject = null;
+  if(hintEl) hintEl.classList.remove('hidden');
+}
+
+/* ضبط أبعاد اللوحة الرسمية لتطابق الفيديو */
+function syncCanvas(video, canvas, wrap){
+  const w = video.videoWidth, h = video.videoHeight;
+  if(!w || !h) return;
+  wrap.style.aspectRatio = w + ' / ' + h;
+  canvas.width = w;
+  canvas.height = h;
+}
+$('#scanVideo').addEventListener('loadedmetadata', () => syncCanvas($('#scanVideo'), $('#scanCanvas'), $('#scanWrap')));
+$('#regVideo').addEventListener('loadedmetadata',  () => syncCanvas($('#regVideo'),  $('#regCanvas'),  $('#regWrap')));
+
+/* =========================================================
+   تحميل نماذج الذكاء الاصطناعي
+   ========================================================= */
+const MODEL_SOURCES = [
+  'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights',
+  'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights',
+  'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights'
+];
+
+let MODELS_READY = false;
+
+function setLoader(pct, msg){
+  $('#loaderBar').style.width = pct + '%';
+  if(msg) $('#loaderMsg').textContent = msg;
+}
+
+async function loadModels(){
+  if(typeof faceapi === 'undefined') throw new Error('face-api.js لم يتم تحميله');
+
+  let lastErr = null;
+  for(const url of MODEL_SOURCES){
+    try{
+      setLoader(10, 'تحميل كاشف الوجه…');
+      await faceapi.nets.tinyFaceDetector.loadFromUri(url);
+      setLoader(45, 'تحميل نقاط الوجه…');
+      await faceapi.nets.faceLandmark68Net.loadFromUri(url);
+      setLoader(75, 'تحميل محرك التعرف…');
+      await faceapi.nets.faceRecognitionNet.loadFromUri(url);
+      setLoader(100, 'اكتمل التحميل ✔');
+      return true;
+    }catch(e){ lastErr = e; console.warn('فشل المصدر:', url, e); }
+  }
+  throw lastErr || new Error('فشل تحميل النماذج');
+}
+
+(async function init(){
+  const envIssues = diagnoseEnvironment();
+  const isInApp = envIssues.some(i => i.includes('تليجرام') || i.includes('تطبيق'));
+  const isSecure = envIssues.includes('بيئة غير آمنة');
+
+  if(isSecure || isInApp){
+    showSecureContextWarning();
+  }
+
+  try{
+    await loadModels();
+    MODELS_READY = true;
+  }catch(e){
+    console.error(e);
+    MODELS_READY = false;
+
+    if(!isSecure && !isInApp){
+      const warn = $('#scanWarn');
+      if(warn.classList.contains('hidden')){
+        warn.classList.remove('hidden');
+        warn.innerHTML = '<button class="dismiss-warn" onclick="this.parentElement.classList.add(\'hidden\')">✕</button> ⚠️ تعذّر تحميل نماذج التعرف على الوجه (قد تكون مشكلة شبكة). يمكنك استخدام <b>التسجيل اليدوي</b> بالأسفل.';
+      }
+    }
+  }finally{
+    setTimeout(() => $('#loader').classList.add('done'), 550);
+    fillManualSelect();
+    renderRecent();
+    renderEmployees();
+
+    if(MODELS_READY && $('#autoStartCam') && $('#autoStartCam').checked && !isSecure && !isInApp){
+      setTimeout(async () => {
+        const ok = await startCamera($('#scanVideo'), 'scan', $('#scanHint'));
+        if(ok){
+          $('#btnStartScan').disabled = true;
+          $('#btnStopScan').disabled = false;
+          scanning = true;
+          setScanBadge('🔍 جارٍ البحث…', '#8496b8');
+          scanLoop();
+          toast('✅ تم تشغيل الكاميرا تلقائياً', 'ok');
+        }
+      }, 800);
+    }
+  }
+})();
+
+// زر التشغيل من داخل الـ hint
+document.addEventListener('click', e => {
+  if(e.target.id === 'scanHintBtn'){
+    unlockAudio();
+    $('#btnStartScan').click();
+  }
+});
+
+/* =========================================================
+   التعرف على الوجه
+   ========================================================= */
+const MATCH_THRESHOLD = 0.52;
+const COOLDOWN_MS     = 30000;
+
+const cooldowns = {};
+
+function euclidean(a, b){
+  let s = 0;
+  for(let i = 0; i < a.length; i++){ const d = a[i] - b[i]; s += d * d; }
+  return Math.sqrt(s);
+}
+
+function findMatch(descriptor){
+  let best = null, bestDist = Infinity;
+  for(const emp of employees){
+    if(!emp.descriptor || !emp.descriptor.length) continue;
+    const d = euclidean(descriptor, emp.descriptor);
+    if(d < bestDist){ bestDist = d; best = emp; }
+  }
+  if(best && bestDist < MATCH_THRESHOLD) return { emp: best, dist: bestDist };
+  return null;
+}
+
+function drawFace(res, color){
+  const canvas = $('#scanCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if(!res) return;
+
+  const { x, y, width, height } = res.detection.box;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(3, canvas.width / 220);
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 18;
+
+  const r = 18;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y); ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r); ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height); ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
+}
+
+/* =========================================================
+   حلقة المسح (محسّنة للسرعة)
+   ========================================================= */
+let scanning = false, scanTimer = null, scanProcessing = false;
+const DETECT_OPTS = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.4 });
+
+async function scanLoop(){
+  if(!scanning || scanProcessing) return;
+  const video = $('#scanVideo');
+
+  try{
+    if(video.readyState === 4 && MODELS_READY && !video.paused){
+      scanProcessing = true;
+      const res = await faceapi
+        .detectSingleFace(video, DETECT_OPTS())
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+      scanProcessing = false;
+
+      if(!res){
+        drawFace(null);
+        setScanBadge('🔍 جارٍ البحث…', '#8496b8');
+      }else{
+        const match = findMatch(res.descriptor);
+        if(match){
+          drawFace(res, '#22c55e');
+          setScanBadge('✔ تم التعرف', '#22c55e');
+          showMatch(match.emp, match.dist);
+          flashScan();
+          if($('#autoMark').checked){
+            markAttendance(match.emp);
+            // إيقاف الكاميرا بعد التسجيل الناجح
+            setTimeout(() => stopScanCamera(), 600);
+            return;
+          }
+        }else{
+          drawFace(res, '#ef4444');
+          setScanBadge('✖ وجه غير مسجّل', '#ef4444');
+          showUnknown();
+        }
+      }
+    }
+  }catch(e){ scanProcessing = false; console.error(e); }
+
+  scanTimer = setTimeout(scanLoop, 200);
+}
+
+function setScanBadge(txt, color){
+  const el = $('#camBadgeTxt');
+  if(el.textContent !== txt) el.textContent = txt;
+  el.style.color = color;
+}
+
+/* =========================================================
+   تسجيل الحضور
+   ========================================================= */
+function markAttendance(emp, manual=false){
+  const now = new Date();
+  if(!manual && cooldowns[emp.id] && (now.getTime() - cooldowns[emp.id]) < COOLDOWN_MS) return;
+
+  const today = ymd(now);
+  const todays = records
+    .filter(r => r.empId === emp.id && r.date === today)
+    .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  const last = todays[todays.length - 1];
+  const type = (last && last.type === 'in') ? 'out' : 'in';
+
+  records.push({
+    id: uid(),
+    empId: emp.id,
+    name: emp.name,
+    code: emp.code,
+    dept: emp.dept,
+    type,
+    time: now.toISOString(),
+    date: today
+  });
+  saveRec();
+
+  cooldowns[emp.id] = now.getTime();
+
+  flashResult(emp, type, now);
+  renderRecent();
+
+  // صوت + اهتزاز + إعلان نصي
+  if(type === 'in'){
+    playSoundIn();
+    speakArabic('مرحباً ' + emp.name + '. تم تسجيل حضورك');
+  }else{
+    playSoundOut();
+    speakArabic(emp.name + '. تم تسجيل انصرافك');
+  }
+
+  toast(
+    type === 'in' ? `✅ تم تسجيل حضور ${emp.name}` : `🚪 تم تسجيل انصراف ${emp.name}`,
+    type === 'in' ? 'ok' : 'warn'
+  );
+
+  if(navigator.vibrate) navigator.vibrate(type === 'in' ? [50, 30, 50] : [30, 50, 30, 50, 30]);
+}
+
+function stopScanCamera(){
+  scanning = false;
+  clearTimeout(scanTimer);
+  stopCamera('scan', $('#scanVideo'), $('#scanHint'));
+  drawFace(null);
+  $('#btnStartScan').disabled = false;
+  $('#btnStopScan').disabled = true;
+  setScanBadge('الكاميرا متوقفة', '#22c55e');
+  const dots = $('#scanDots');
+  const btn = $('#scanHintBtn');
+  if(dots) dots.style.display = 'none';
+  if(btn) btn.style.display = '';
+}
+
+/* تأثير الوميض عند التعرف */
+function flashScan(){
+  const wrap = $('#scanWrap');
+  wrap.style.boxShadow = '0 0 40px rgba(34,211,238,.6)';
+  setTimeout(()=> wrap.style.boxShadow = '', 400);
+}
+
+/* =========================================================
+   عرض النتائج
+   ========================================================= */
+function showMatch(emp, dist){
+  $('#resultEmpty').classList.add('hidden');
+  $('#resultData').classList.remove('hidden');
+
+  const photo = $('#resPhoto');
+  if(emp.photo) photo.src = emp.photo; else photo.src = placeholderImg(emp.name);
+
+  $('#resName').textContent = emp.name;
+  $('#resMeta').textContent = `${emp.code || '—'} · ${emp.dept || 'بدون قسم'}${emp.job ? ' · ' + emp.job : ''}`;
+  $('#resType').className = 'res-type in';
+  $('#resType').textContent = '✔ موظف مسجّل — جاهز للتسجيل';
+  $('#resTime').textContent = `دقة المطابقة: ${(100 - dist * 100).toFixed(1)}%`;
+}
+
+function showUnknown(){
+  $('#resultEmpty').classList.add('hidden');
+  $('#resultData').classList.remove('hidden');
+  $('#resPhoto').src = placeholderImg('؟');
+  $('#resName').textContent = 'وجه غير معروف';
+  $('#resMeta').textContent = 'هذا الوجه غير مسجّل في النظام';
+  $('#resType').className = 'res-type unknown';
+  $('#resType').textContent = '✖ غير مصرّح';
+  $('#resTime').textContent = 'يرجى مراجعة إدارة الموارد البشرية';
+  playSoundUnknown();
+  speakArabic('وجه غير معروف. غير مصرّح');
+}
+
+function flashResult(emp, type, date){
+  $('#resultEmpty').classList.add('hidden');
+  $('#resultData').classList.remove('hidden');
+
+  const photo = $('#resPhoto');
+  if(emp.photo) photo.src = emp.photo; else photo.src = placeholderImg(emp.name);
+
+  $('#resName').textContent = emp.name;
+  $('#resMeta').textContent = `${emp.code || '—'} · ${emp.dept || 'بدون قسم'}`;
+
+  const box = $('#resType');
+  box.className = 'res-type ' + type;
+  box.textContent = type === 'in' ? '🟢 تم تسجيل الحضور' : '🟠 تم تسجيل الانصراف';
+  $('#resTime').textContent = '⏰ ' + fmtTime(date.toISOString()) + ' — ' + fmtDate(date.toISOString());
+}
+
+function placeholderImg(txt){
+  const c = document.createElement('canvas');
+  c.width = c.height = 120;
+  const ctx = c.getContext('2d');
+  const g = ctx.createLinearGradient(0, 0, 120, 120);
+  g.addColorStop(0, '#22d3ee'); g.addColorStop(1, '#6366f1');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, 120, 120);
+  ctx.fillStyle = '#04121a'; ctx.font = 'bold 52px Cairo, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText((txt || '؟').trim().charAt(0), 60, 64);
+  return c.toDataURL();
+}
+
+function renderRecent(){
+  const list = $('#recentList');
+  const recent = [...records].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 6);
+
+  if(!recent.length){
+    list.innerHTML = '<li style="justify-content:center;color:var(--muted)">لا توجد عمليات بعد</li>';
+    return;
+  }
+  list.innerHTML = recent.map(r => `
+    <li>
+      <b>${escapeHtml(r.name)}</b>
+      <span class="pill ${r.type}">${r.type === 'in' ? 'حضور' : 'انصراف'}</span>
+      <span>${fmtTime(r.time)}</span>
+    </li>
+  `).join('');
+}
+
+/* =========================================================
+   أزرار المسح (معدّلة لتعمل الكاميرا حتى بدون نماذج)
+   ========================================================= */
+$('#btnStartScan').addEventListener('click', async () => {
+  unlockAudio();
+  const ok = await startCamera($('#scanVideo'), 'scan', $('#scanHint'));
+  if(!ok) return;
+
+  $('#btnStartScan').disabled = true;
+  $('#btnStopScan').disabled = false;
+
+  if(!MODELS_READY){
+    setScanBadge('⚠ النماذج غير محمّلة', '#f59e0b');
+    toast('الكاميرا تعمل لكن نماذج التعرف لم تُحمّل — استخدم التسجيل اليدوي', 'warn', 6000);
+    return;
+  }
+
+  scanning = true;
+  setScanBadge('🔍 جارٍ البحث…', '#8496b8');
+  scanLoop();
+  toast('✅ تم تشغيل الكاميرا', 'ok');
+});
+
+$('#btnStopScan').addEventListener('click', () => {
+  stopScanCamera();
+});
+
+// تبديل الكاميرا عند تغيير القائمة
+$('#cameraSelect').addEventListener('change', async () => {
+  if(streams['scan']){
+    stopScanCamera();
+    const ok = await startCamera($('#scanVideo'), 'scan', $('#scanHint'));
+    if(ok && MODELS_READY){
+      scanning = true;
+      setScanBadge('🔍 جارٍ البحث…', '#8496b8');
+      scanLoop();
+    }
+  }
+});
+
+// زر اختبار الصوت
+$('#btnTestSound').addEventListener('click', () => {
+  unlockAudio();
+  playSoundIn();
+  speakArabic('مرحباً. هذا اختبار الصوت');
+  toast('🔔 تم تشغيل صوت الاختبار', 'ok');
+});
+
+// محاولة قائمة الكاميرات بعد تحميل الصلاحيات
+enumerateCameras().then(cameras => {
+  if(cameras.length > 1) populateCameraSelect();
+});
+
+/* التسجيل اليدوي */
+function fillManualSelect(){
+  const sel = $('#manualEmp');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">— اختر موظفاً —</option>' +
+    employees.map(e => `<option value="${e.id}">${escapeHtml(e.name)} (${escapeHtml(e.code || '—')})</option>`).join('');
+  if(cur) sel.value = cur;
+}
+
+$('#btnManual').addEventListener('click', () => {
+  unlockAudio();
+  const id = $('#manualEmp').value;
+  if(!id) return toast('اختر موظفاً أولاً', 'warn');
+  const emp = employees.find(e => e.id === id);
+  if(!emp) return;
+  markAttendance(emp, true);
+  flashResult(emp, records[records.length - 1].type, new Date());
+});
+
+/* =========================================================
+   تسجيل بصمة الوجه للموظف
+   ========================================================= */
+let regSamples = [], regPhoto = null, regRunning = false, regTimer = null;
+const REG_TARGET = 8;
+
+$('#btnRegCapture').addEventListener('click', async () => {
+  unlockAudio();
+  if(!MODELS_READY) return toast('نماذج التعرف غير متاحة حالياً', 'danger');
+
+  const name = $('#empName').value.trim();
+  if(!name) return toast('أدخل اسم الموظف أولاً', 'warn');
+
+  const ok = await startCamera($('#regVideo'), 'reg', $('#regHint'));
+  if(!ok) return;
+
+  regSamples = []; regPhoto = null; regRunning = true;
+  $('#regBar').style.width = '0%';
+  $('#btnRegCapture').disabled = true;
+  $('#btnRegStop').disabled = false;
+  $('#regHint').classList.add('hidden');
+
+  let count = 0;
+
+  regTimer = setInterval(async () => {
+    if(!regRunning) return;
+    const video = $('#regVideo');
+    if(video.readyState !== 4 || video.paused) return;
+
+    try{
+      const res = await faceapi
+        .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 256, scoreThreshold: 0.45 }))
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+
+      const canvas = $('#regCanvas');
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if(res){
+        const b = res.detection.box;
+        ctx.strokeStyle = '#22c55e'; ctx.lineWidth = Math.max(3, canvas.width / 240);
+        ctx.strokeRect(b.x, b.y, b.width, b.height);
+
+        regSamples.push(Array.from(res.descriptor));
+        if(!regPhoto) regPhoto = captureFrame(video);
+
+        count++;
+        $('#regBar').style.width = (count / REG_TARGET * 100) + '%';
+
+        if(count >= REG_TARGET) finishRegistration();
+      }
+    }catch(e){ console.error(e); }
+  }, 280);
+});
+
+$('#btnRegStop').addEventListener('click', () => {
+  regRunning = false;
+  clearInterval(regTimer);
+  stopCamera('reg', $('#regVideo'), $('#regHint'));
+  $('#btnRegCapture').disabled = false;
+  $('#btnRegStop').disabled = true;
+  $('#regBar').style.width = '0%';
+  const canvas = $('#regCanvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+});
+
+function captureFrame(video){
+  const c = document.createElement('canvas');
+  const w = 220, h = Math.round(video.videoHeight / video.videoWidth * 220) || 165;
+  c.width = w; c.height = h;
+  c.getContext('2d').drawImage(video, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.78);
+}
+
+function finishRegistration(){
+  regRunning = false;
+  clearInterval(regTimer);
+
+  if(!regSamples.length){
+    toast('لم يتم التقاط أي بصمة — أعد المحاولة', 'danger');
+    $('#btnRegCapture').disabled = false;
+    $('#btnRegStop').disabled = true;
+    return;
+  }
+
+  const dim = regSamples[0].length;
+  const avg = new Array(dim).fill(0);
+  for(const s of regSamples) for(let i = 0; i < dim; i++) avg[i] += s[i];
+  for(let i = 0; i < dim; i++) avg[i] = Math.round((avg[i] / regSamples.length) * 1000) / 1000;
+
+  const emp = {
+    id: uid(),
+    name: $('#empName').value.trim(),
+    code: $('#empCode').value.trim() || ('EMP-' + String(employees.length + 1).padStart(3, '0')),
+    dept: $('#empDept').value.trim() || 'غير محدد',
+    job:  $('#empJob').value.trim() || '',
+    photo: regPhoto,
+    descriptor: avg,
+    createdAt: new Date().toISOString()
+  };
+
+  employees.push(emp);
+  saveEmp();
+
+  $('#empName').value = ''; $('#empCode').value = '';
+  $('#empDept').value = ''; $('#empJob').value = '';
+  $('#regBar').style.width = '100%';
+  $('#btnRegCapture').disabled = false;
+  $('#btnRegStop').disabled = true;
+
+  setTimeout(() => { $('#regBar').style.width = '0%'; }, 900);
+
+  renderEmployees();
+  fillManualSelect();
+  playSoundRegister();
+  speakArabic('تم تسجيل ' + emp.name + ' بنجاح');
+  toast(`✅ تم تسجيل ${emp.name} بنجاح`, 'ok');
+}
+
+/* =========================================================
+   عرض قائمة الموظفين
+   ========================================================= */
+function renderEmployees(){
+  $('#empCount').textContent = employees.length;
+  const list = $('#empList');
+
+  if(!employees.length){
+    list.innerHTML = '<div class="empty-state">لا يوجد موظفون بعد.<br>أضف أول موظف وسجّل بصمة وجهه 👈</div>';
+    return;
+  }
+
+  list.innerHTML = employees.map(e => `
+    <div class="emp-item">
+      ${e.photo
+        ? `<img src="${e.photo}" alt="">`
+        : `<div class="emp-avatar">${escapeHtml(e.name.trim().charAt(0))}</div>`}
+      <div class="emp-info">
+        <strong>${escapeHtml(e.name)}</strong>
+        <span>${escapeHtml(e.code || '—')} · ${escapeHtml(e.dept || '—')}</span>
+      </div>
+      <button class="icon-btn" data-del="${e.id}" title="حذف">🗑</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.del;
+      const emp = employees.find(e => e.id === id);
+      if(!emp) return;
+      if(!confirm(`هل تريد حذف «${emp.name}»؟ لن تُحذف سجلاته السابقة.`)) return;
+      employees = employees.filter(e => e.id !== id);
+      saveEmp();
+      renderEmployees();
+      fillManualSelect();
+      toast('تم حذف الموظف', 'warn');
+    });
+  });
+}
+
+/* =========================================================
+   السجلات
+   ========================================================= */
+function getFilteredRecords(){
+  const date = $('#filterDate').value;
+  const q = $('#searchName').value.trim().toLowerCase();
+  const type = $('#filterType').value;
+
+  return records
+    .filter(r => !date || r.date === date)
+    .filter(r => !type || r.type === type)
+    .filter(r => !q || (r.name || '').toLowerCase().includes(q) || (r.code || '').toLowerCase().includes(q))
+    .sort((a, b) => new Date(b.time) - new Date(a.time));
+}
+
+function renderRecords(){
+  const rows = getFilteredRecords();
+  const body = $('#recordsBody');
+
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="7"><div class="empty-state">لا توجد سجلات مطابقة</div></td></tr>';
+    return;
+  }
+
+  body.innerHTML = rows.map((r, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><strong>${escapeHtml(r.name)}</strong></td>
+      <td>${escapeHtml(r.code || '—')}</td>
+      <td>${escapeHtml(r.dept || '—')}</td>
+      <td><span class="pill ${r.type}">${r.type === 'in' ? 'حضور' : 'انصراف'}</span></td>
+      <td>${fmtDate(r.time)}</td>
+      <td>${fmtTime(r.time)}</td>
+    </tr>
+  `).join('');
+}
+
+['#filterDate', '#searchName', '#filterType'].forEach(sel => {
+  const el = $(sel);
+  el.addEventListener('input', renderRecords);
+  el.addEventListener('change', renderRecords);
+});
+
+/* تصدير CSV */
+$('#btnExport').addEventListener('click', () => {
+  const rows = getFilteredRecords();
+  if(!rows.length) return toast('لا توجد بيانات للتصدير', 'warn');
+
+  const header = ['الاسم', 'الرقم الوظيفي', 'القسم', 'الحركة', 'التاريخ', 'الوقت'];
+  const csv = [header.join(',')].concat(
+    rows.map(r => [
+      `"${(r.name || '').replace(/"/g, '""')}"`,
+      `"${r.code || ''}"`,
+      `"${(r.dept || '').replace(/"/g, '""')}"`,
+      r.type === 'in' ? 'حضور' : 'انصراف',
+      r.date,
+      fmtTime(r.time)
+    ].join(','))
+  ).join('\n');
+
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `attendance_${ymd(new Date())}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('تم تصدير الملف بنجاح', 'ok');
+});
+
+/* حذف الكل */
+$('#btnClear').addEventListener('click', () => {
+  if(!records.length) return toast('لا توجد سجلات', 'warn');
+  if(!confirm('سيتم حذف جميع السجلات نهائياً. هل أنت متأكد؟')) return;
+  records = [];
+  saveRec();
+  renderRecords();
+  renderRecent();
+  renderReports();
+  toast('تم حذف جميع السجلات', 'danger');
+});
+
+/* =========================================================
+   التقارير
+   ========================================================= */
+const LATE_HOUR = 9;
+
+function renderReports(){
+  const today = ymd(new Date());
+  $('#reportDateLbl').textContent = new Date().toLocaleDateString('ar-EG', {
+    weekday:'long', year:'numeric', month:'long', day:'numeric'
+  });
+
+  const todayRecs = records.filter(r => r.date === today);
+
+  const firstIn = {};
+  todayRecs.filter(r => r.type === 'in').forEach(r => {
+    const t = new Date(r.time);
+    if(!firstIn[r.empId] || t < firstIn[r.empId]) firstIn[r.empId] = t;
+  });
+
+  const presentIds = Object.keys(firstIn);
+  const lateCount = presentIds.filter(id => {
+    const d = firstIn[id];
+    return d.getHours() > LATE_HOUR || (d.getHours() === LATE_HOUR && d.getMinutes() > 0);
+  }).length;
+
+  $('#stTotal').textContent   = employees.length;
+  $('#stPresent').textContent = presentIds.length;
+  $('#stLate').textContent    = lateCount;
+  $('#stAbsent').textContent  = Math.max(0, employees.length - presentIds.length);
+
+  const chart = $('#chart7');
+  const days = [];
+  for(let i = 6; i >= 0; i--){
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = ymd(d);
+    const set = new Set(records.filter(r => r.date === key && r.type === 'in').map(r => r.empId));
+    days.push({ key, label: d.toLocaleDateString('ar-EG', { weekday:'short' }), count: set.size });
+  }
+  const max = Math.max(1, ...days.map(d => d.count));
+  chart.innerHTML = days.map(d => `
+    <div class="bar-col">
+      <b>${d.count}</b>
+      <div class="bar" style="height:${(d.count / max) * 100}%;${d.count === 0 ? 'opacity:.25' : ''}"></div>
+      <span>${d.label}</span>
+    </div>
+  `).join('');
+
+  const body = $('#todayBody');
+  if(!employees.length){
+    body.innerHTML = '<tr><td colspan="4"><div class="empty-state">لا يوجد موظفون</div></td></tr>';
+    return;
+  }
+
+  body.innerHTML = employees.map(emp => {
+    const recs = todayRecs.filter(r => r.empId === emp.id).sort((a, b) => new Date(a.time) - new Date(b.time));
+    const inRec  = recs.find(r => r.type === 'in');
+    const outRec = [...recs].reverse().find(r => r.type === 'out');
+
+    let status = '<span class="pill" style="background:rgba(239,68,68,.16);color:#f87171">غائب</span>';
+    if(inRec){
+      const d = new Date(inRec.time);
+      const isLate = d.getHours() > LATE_HOUR || (d.getHours() === LATE_HOUR && d.getMinutes() > 0);
+      status = isLate
+        ? '<span class="pill" style="background:rgba(245,158,11,.16);color:#fbbf24">متأخر</span>'
+        : '<span class="pill in">حاضر</span>';
+    }
+
+    return `<tr>
+      <td><strong>${escapeHtml(emp.name)}</strong></td>
+      <td>${inRec ? fmtTime(inRec.time) : '—'}</td>
+      <td>${outRec ? fmtTime(outRec.time) : '—'}</td>
+      <td>${status}</td>
+    </tr>`;
+  }).join('');
+}
+
+/* =========================================================
+   حماية النصوص
+   ========================================================= */
+function escapeHtml(str){
+  return String(str ?? '').replace(/[&<>"']/g, m => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[m]));
+}
+
+/* =========================================================
+   زر اختبار الكاميرا للتشخيص
+   ========================================================= */
+window.testCamera = async function(){
+  console.log('=== تشخيص الكاميرا ===');
+  console.log('isSecureContext:', window.isSecureContext);
+  console.log('mediaDevices:', !!navigator.mediaDevices);
+  console.log('getUserMedia:', !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia));
+
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({ video: true });
+    console.log('✅ الكاميرا تعمل');
+    s.getTracks().forEach(t => t.stop());
+    return true;
+  }catch(e){
+    console.error('❌ فشل:', e.name, e.message);
+    return false;
+  }
+};
+
+/* =========================================================
+   التهيئة الأولية
+   ========================================================= */
+$('#filterDate').value = ymd(new Date());
+renderRecent();
+renderEmployees();
+fillManualSelect();
+</script>
+</body>
+</html>
