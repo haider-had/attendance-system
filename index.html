@@ -380,6 +380,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
       <button class="nav-btn" data-tab="employees">👥 الموظفون</button>
       <button class="nav-btn" data-tab="records">📋 السجلات</button>
       <button class="nav-btn" data-tab="reports">📊 التقارير</button>
+      <button class="nav-btn" data-tab="settings">⚙️ الإعدادات</button>
     </nav>
 
     <div class="sidebar-foot">
@@ -568,6 +569,47 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
       </div>
     </section>
 
+    <!-- ============ تبويب الإعدادات ============ -->
+    <section id="tab-settings" class="tab">
+      <div class="page-head">
+        <h2>الإعدادات</h2>
+        <p>ضبط أوقات الحضور والانصراف وإدارة البيانات</p>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <h3 class="card-title">🕐 أوقات العمل</h3>
+          <div class="form-grid">
+            <label>بداية فترة الحضور (من)<input id="attFrom" type="time" value="08:00"></label>
+            <label>نهاية فترة الحضور (إلى — متأخر)<input id="attTo" type="time" value="09:00"></label>
+            <label>بداية فترة الانصراف (من)<input id="depFrom" type="time" value="16:00"></label>
+            <label>نهاية فترة الانصراف (إلى)<input id="depTo" type="time" value="18:00"></label>
+          </div>
+          <div style="margin-top:14px">
+            <button id="btnSaveTimes" class="btn primary">💾 حفظ الأوقات</button>
+          </div>
+          <p style="margin-top:10px;font-size:12px;color:var(--muted)">
+            الحضور قبل أو بعد هذه الأوقات يُ considers متأخراً أو غير صالح
+          </p>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title">💾 إدارة البيانات</h3>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <button id="btnBackup" class="btn primary">📦 تصدير نسخة احتياطية (JSON)</button>
+            <button id="btnRestore" class="btn ghost">📂 استيراد نسخة احتياطية</button>
+            <input type="file" id="restoreFile" accept=".json" style="display:none">
+
+            <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:4px">
+              <h3 class="card-title">⚠️ منطقة الخطر</h3>
+              <button id="btnResetAll" class="btn danger">🗑 حذف جميع البيانات (موظفين + سجلات)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 </div>
 
@@ -727,12 +769,21 @@ function speakArabic(text){
    ========================================================= */
 const KEY_EMP = 'attendance_employees_v1';
 const KEY_REC = 'attendance_records_v1';
+const KEY_SET = 'attendance_settings_v1';
 
 let employees = JSON.parse(localStorage.getItem(KEY_EMP) || '[]');
 let records   = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
+let settings  = JSON.parse(localStorage.getItem(KEY_SET) || '{}');
 
 const saveEmp = () => localStorage.setItem(KEY_EMP, JSON.stringify(employees));
 const saveRec = () => localStorage.setItem(KEY_REC, JSON.stringify(records));
+const saveSet = () => localStorage.setItem(KEY_SET, JSON.stringify(settings));
+
+// إعدادات افتراضية
+if(!settings.attFrom) settings.attFrom = '08:00';
+if(!settings.attTo)   settings.attTo   = '09:00';
+if(!settings.depFrom) settings.depFrom = '16:00';
+if(!settings.depTo)   settings.depTo   = '18:00';
 
 /* =========================================================
    الساعة
@@ -827,6 +878,7 @@ function switchTab(name){
   if(name === 'reports')  renderReports();
   if(name === 'employees'){ renderEmployees(); fillManualSelect(); }
   if(name === 'scan')     fillManualSelect();
+  if(name === 'settings') loadSettingsForm();
 }
 $$('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -1014,6 +1066,84 @@ async function loadModels(){
   throw lastErr || new Error('فشل تحميل النماذج');
 }
 
+/* =========================================================
+   الإعدادات
+   ========================================================= */
+function loadSettingsForm(){
+  $('#attFrom').value = settings.attFrom || '08:00';
+  $('#attTo').value   = settings.attTo   || '09:00';
+  $('#depFrom').value = settings.depFrom || '16:00';
+  $('#depTo').value   = settings.depTo   || '18:00';
+}
+
+$('#btnSaveTimes').addEventListener('click', () => {
+  settings.attFrom = $('#attFrom').value;
+  settings.attTo   = $('#attTo').value;
+  settings.depFrom = $('#depFrom').value;
+  settings.depTo   = $('#depTo').value;
+  saveSet();
+  playSoundIn();
+  speakArabic('تم حفظ الإعدادات');
+  toast('✅ تم حفظ إعدادات الأوقات', 'ok');
+});
+
+// تصدير نسخة احتياطية
+$('#btnBackup').addEventListener('click', () => {
+  const backup = { employees, records, settings, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'attendance_backup_' + ymd(new Date()) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  playSoundIn();
+  speakArabic('تم تصدير النسخة الاحتياطية');
+  toast('✅ تم تصدير النسخة الاحتياطية', 'ok');
+});
+
+// استيراد نسخة احتياطية
+$('#btnRestore').addEventListener('click', () => {
+  showModal('📂', 'استيراد نسخة احتياطية', 'سيتم استبدال جميع البيانات الحالية بالبيانات المستوردة. هل تريد المتابعة؟', () => {
+    $('#restoreFile').click();
+  });
+});
+
+$('#restoreFile').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try{
+      const data = JSON.parse(evt.target.result);
+      if(data.employees) employees = data.employees;
+      if(data.records) records = data.records;
+      if(data.settings) settings = data.settings;
+      saveEmp(); saveRec(); saveSet();
+      renderRecords(); renderRecent(); renderReports(); renderEmployees(); fillManualSelect(); loadSettingsForm();
+      playSoundRegister();
+      speakArabic('تم استيراد البيانات بنجاح');
+      toast('✅ تم استيراد البيانات بنجاح', 'ok');
+    }catch(e){
+      toast('❌ ملف غير صالح', 'danger');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+// حذف كل البيانات
+$('#btnResetAll').addEventListener('click', () => {
+  showModal('⚠️', 'حذف جميع البيانات', 'سيتم حذف جميع الموظفين والسجلات والإعدادات نهائياً! لا يمكن التراجع!', () => {
+    employees = []; records = [];
+    settings = { attFrom:'08:00', attTo:'09:00', depFrom:'16:00', depTo:'18:00' };
+    saveEmp(); saveRec(); saveSet();
+    renderRecords(); renderRecent(); renderReports(); renderEmployees(); fillManualSelect(); loadSettingsForm();
+    playSoundUnknown();
+    speakArabic('تم حذف جميع البيانات');
+    toast('تم حذف جميع البيانات', 'danger');
+  });
+});
+
 (async function init(){
   const envIssues = diagnoseEnvironment();
   const isInApp = envIssues.some(i => i.includes('تليجرام') || i.includes('تطبيق'));
@@ -1171,7 +1301,26 @@ function setScanBadge(txt, color){
 
 /* =========================================================
    تسجيل الحضور (حضور مرة + انصراف مرة بس باليوم)
+   مع فحص أوقات العمل
    ========================================================= */
+function isTimeInRange(timeStr, fromStr, toStr){
+  const h = parseInt(timeStr.split(':')[0]);
+  const m = parseInt(timeStr.split(':')[1]);
+  const fh = parseInt(fromStr.split(':')[0]);
+  const fm = parseInt(fromStr.split(':')[1]);
+  const th = parseInt(toStr.split(':')[0]);
+  const tm = parseInt(toStr.split(':')[1]);
+  const mins = h * 60 + m;
+  const fromMins = fh * 60 + fm;
+  const toMins = th * 60 + tm;
+  return mins >= fromMins && mins <= toMins;
+}
+
+function getNowHHMM(){
+  const n = new Date();
+  return String(n.getHours()).padStart(2,'0') + ':' + String(n.getMinutes()).padStart(2,'0');
+}
+
 function markAttendance(emp, manual=false){
   const now = new Date();
   if(!manual && cooldowns[emp.id] && (now.getTime() - cooldowns[emp.id]) < COOLDOWN_MS) return;
@@ -1181,27 +1330,50 @@ function markAttendance(emp, manual=false){
     .filter(r => r.empId === emp.id && r.date === today)
     .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-  // فحص: هل سجل حضور اليوم؟
   const hasIn = todays.some(r => r.type === 'in');
-  // فحص: هل سجل انصراف اليوم؟
   const hasOut = todays.some(r => r.type === 'out');
 
   let type;
 
   if(!hasIn){
-    // ما سجل حضور بعد → يسجل حضور
     type = 'in';
   }else if(!hasOut){
-    // سجل حضور بس ما سجل انصراف → يسجل انصراف
     type = 'out';
   }else{
-    // سجل حضور + انصراف اليوم كله → ما يسمح بتسجيل أكثر
-    toast(`⚠️ ${emp.name} سجل حضوره وانصرافه اليوم بالفعل`, 'warn');
+    toast('⚠️ ' + emp.name + ' سجل حضوره وانصرافه اليوم بالفعل', 'warn');
     flashResult(emp, 'in', now);
     $('#resType').textContent = '⚠️ تم تسجيل الحضور والانصراف اليوم';
     $('#resType').className = 'res-type out';
     $('#resTime').textContent = 'لا يمكن التسجيل مرة أخرى اليوم';
     return;
+  }
+
+  // فحص وقت الحضور
+  if(type === 'in' && !manual){
+    const nowTime = getNowHHMM();
+    if(!isTimeInRange(nowTime, settings.attFrom, settings.attTo)){
+      toast('⚠️ خارج فترة الحضور المحددة (' + settings.attFrom + ' - ' + settings.attTo + ')', 'warn', 6000);
+      flashResult(emp, 'in', now);
+      $('#resType').textContent = '⚠️ خارج وقت الحضور';
+      $('#resType').className = 'res-type unknown';
+      $('#resTime').textContent = 'فترة الحضور: ' + settings.attFrom + ' إلى ' + settings.attTo;
+      playSoundUnknown();
+      return;
+    }
+  }
+
+  // فحص وقت الانصراف
+  if(type === 'out' && !manual){
+    const nowTime = getNowHHMM();
+    if(!isTimeInRange(nowTime, settings.depFrom, settings.depTo)){
+      toast('⚠️ خارج فترة الانصراف المحددة (' + settings.depFrom + ' - ' + settings.depTo + ')', 'warn', 6000);
+      flashResult(emp, 'out', now);
+      $('#resType').textContent = '⚠️ خارج وقت الانصراف';
+      $('#resType').className = 'res-type unknown';
+      $('#resTime').textContent = 'فترة الانصراف: ' + settings.depFrom + ' إلى ' + settings.depTo;
+      playSoundUnknown();
+      return;
+    }
   }
 
   records.push({
@@ -1221,7 +1393,6 @@ function markAttendance(emp, manual=false){
   flashResult(emp, type, now);
   renderRecent();
 
-  // صوت + اهتزاز + إعلان نصي
   if(type === 'in'){
     playSoundIn();
     speakArabic('مرحباً ' + emp.name + '. تم تسجيل حضورك');
@@ -1231,7 +1402,7 @@ function markAttendance(emp, manual=false){
   }
 
   toast(
-    type === 'in' ? `✅ تم تسجيل حضور ${emp.name}` : `🚪 تم تسجيل انصراف ${emp.name}`,
+    type === 'in' ? '✅ تم تسجيل حضور ' + emp.name : '🚪 تم تسجيل انصراف ' + emp.name,
     type === 'in' ? 'ok' : 'warn'
   );
 
@@ -1426,7 +1597,7 @@ $('#btnManual').addEventListener('click', () => {
    تسجيل بصمة الوجه للموظف
    ========================================================= */
 let regSamples = [], regPhoto = null, regRunning = false, regTimer = null;
-const REG_TARGET = 8;
+const REG_TARGET = 4;
 
 $('#btnRegCapture').addEventListener('click', async () => {
   unlockAudio();
@@ -1443,6 +1614,7 @@ $('#btnRegCapture').addEventListener('click', async () => {
   $('#btnRegCapture').disabled = true;
   $('#btnRegStop').disabled = false;
   $('#regHint').classList.add('hidden');
+  toast('📸 جارٍ التقاط الصورة… وقف مكانك', 'ok', 2000);
 
   let count = 0;
 
@@ -1474,7 +1646,7 @@ $('#btnRegCapture').addEventListener('click', async () => {
         if(count >= REG_TARGET) finishRegistration();
       }
     }catch(e){ console.error(e); }
-  }, 280);
+  }, 350);
 });
 
 $('#btnRegStop').addEventListener('click', () => {
@@ -1500,10 +1672,16 @@ function finishRegistration(){
   regRunning = false;
   clearInterval(regTimer);
 
+  // إيقاف الكاميرا فوراً بعد الانتهاء
+  stopCamera('reg', $('#regVideo'), $('#regHint'));
+  const canvas = $('#regCanvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+
   if(!regSamples.length){
     toast('لم يتم التقاط أي بصمة — أعد المحاولة', 'danger');
     $('#btnRegCapture').disabled = false;
     $('#btnRegStop').disabled = true;
+    $('#regBar').style.width = '0%';
     return;
   }
 
@@ -1538,7 +1716,7 @@ function finishRegistration(){
   fillManualSelect();
   playSoundRegister();
   speakArabic('تم تسجيل ' + emp.name + ' بنجاح');
-  toast(`✅ تم تسجيل ${emp.name} بنجاح`, 'ok');
+  toast('✅ تم تسجيل ' + emp.name + ' بنجاح', 'ok');
 }
 
 /* =========================================================
@@ -1628,24 +1806,46 @@ function renderRecords(){
 
 /* تصدير CSV */
 $('#btnExport').addEventListener('click', () => {
-  const rows = getFilteredRecords();
-  if(!rows.length) return toast('لا توجد بيانات للتصدير', 'warn');
-  showModal('📊', 'تصدير السجلات', 'سيتم تصدير ' + rows.length + ' سجل بصيغة CSV. هل تريد المتابعة؟', () => {
-    const header = ['الاسم', 'الرقم الوظيفي', 'القسم', 'الحركة', 'التاريخ', 'الوقت'];
-    const csv = [header.join(',')].concat(
-      rows.map(r => [
-        '"' + (r.name || '').replace(/"/g, '""') + '"',
-        '"' + (r.code || '') + '"',
-        '"' + (r.dept || '').replace(/"/g, '""') + '"',
-        r.type === 'in' ? 'حضور' : 'انصراف',
-        r.date,
-        fmtTime(r.time)
-      ].join(','))
-    ).join('\n');
+  if(!records.length) return toast('لا توجد بيانات للتصدير', 'warn');
+
+  const filterDate = $('#filterDate').value || ymd(new Date());
+  const dayRecs = records.filter(r => r.date === filterDate);
+
+  showModal('📊', 'تصدير السجلات', 'سيتم تصدير سجلات يوم ' + fmtDate(filterDate + 'T00:00:00') + '. هل تريد المتابعة؟', () => {
+    const header = ['الاسم', 'الرقم الوظيفي', 'القسم', 'وقت الحضور', 'وقت الانصراف', 'الحالة'];
+    const empMap = {};
+    employees.forEach(e => { empMap[e.id] = e; });
+
+    const empIds = new Set();
+    dayRecs.forEach(r => empIds.add(r.empId));
+
+    const rows = [];
+    empIds.forEach(empId => {
+      const emp = empMap[empId];
+      if(!emp) return;
+      const empRecs = dayRecs.filter(r => r.empId === empId).sort((a,b) => new Date(a.time) - new Date(b.time));
+      const inRec = empRecs.find(r => r.type === 'in');
+      const outRec = empRecs.find(r => r.type === 'out');
+
+      let status = 'غائب';
+      if(inRec && outRec) status = 'حاضر';
+      else if(inRec) status = 'في العمل';
+
+      rows.push([
+        '"' + (emp.name || '').replace(/"/g, '""') + '"',
+        '"' + (emp.code || '') + '"',
+        '"' + (emp.dept || '').replace(/"/g, '""') + '"',
+        inRec ? fmtTime(inRec.time) : '—',
+        outRec ? fmtTime(outRec.time) : '—',
+        status
+      ].join(','));
+    });
+
+    const csv = [header.join(',')].concat(rows).join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'attendance_' + ymd(new Date()) + '.csv';
+    a.download = 'attendance_' + filterDate + '.csv';
     a.click();
     URL.revokeObjectURL(a.href);
     playSoundIn();
