@@ -290,6 +290,26 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 .toast.warn{border-right-color:var(--warn)}
 .toast.danger{border-right-color:var(--danger)}
 
+/* ============ النافذة التفاعلية (Modal) ============ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,8,15,.85);backdrop-filter:blur(10px);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.modal-overlay.show{opacity:1;pointer-events:all}
+.modal{
+  background:var(--panel);border:1px solid var(--border);border-radius:20px;
+  padding:28px;width:min(440px,90vw);text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+  transform:scale(.9);transition:transform .25s;
+}
+.modal-overlay.show .modal{transform:scale(1)}
+.modal-icon{font-size:52px;margin-bottom:14px}
+.modal h3{font-size:18px;font-weight:800;margin-bottom:8px}
+.modal p{color:var(--muted);font-size:13.5px;margin-bottom:20px;line-height:1.7}
+.modal-btns{display:flex;gap:10px;justify-content:center}
+.modal-btns .btn{min-width:120px;justify-content:center}
+
 .warn-banner{
   padding:12px 16px;border-radius:13px;background:rgba(245,158,11,.11);
   border:1px solid rgba(245,158,11,.3);color:#fcd34d;font-size:13px;margin-bottom:16px;font-weight:600;
@@ -553,6 +573,19 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 
 <div id="toasts"></div>
 
+<!-- النافذة التفاعلية -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-icon" id="modalIcon">⚠️</div>
+    <h3 id="modalTitle">تأكيد</h3>
+    <p id="modalMsg">هل أنت متأكد؟</p>
+    <div class="modal-btns">
+      <button class="btn ghost" id="modalCancel">إلغاء</button>
+      <button class="btn primary" id="modalConfirm">تأكيد</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script>
 /* =========================================================
@@ -659,11 +692,12 @@ function loadVoices(){
   const voices = window.speechSynthesis.getVoices();
   arVoice = voices.find(v => v.lang.startsWith('ar')) || null;
   voicesLoaded = true;
+  if(voices.length > 0) return;
 }
 
 if('speechSynthesis' in window){
   loadVoices();
-  speechSynthesis.onvoiceschanged = () => loadVoices();
+  speechSynthesis.onvoiceschanged = () => { loadVoices(); };
 }
 
 function speakArabic(text){
@@ -674,10 +708,16 @@ function speakArabic(text){
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'ar-SA';
-    u.rate = 1.1;
+    u.rate = 1.0;
     u.pitch = 1.0;
     u.volume = 1.0;
-    if(arVoice) u.voice = arVoice;
+    if(arVoice){
+      u.voice = arVoice;
+    }else{
+      const voices = window.speechSynthesis.getVoices();
+      const fallback = voices.find(v => v.lang.includes('ar'));
+      if(fallback) u.voice = fallback;
+    }
     window.speechSynthesis.speak(u);
   }catch(e){ console.warn('Speech error:', e); }
 }
@@ -1130,7 +1170,7 @@ function setScanBadge(txt, color){
 }
 
 /* =========================================================
-   تسجيل الحضور
+   تسجيل الحضور (حضور مرة + انصراف مرة بس باليوم)
    ========================================================= */
 function markAttendance(emp, manual=false){
   const now = new Date();
@@ -1141,8 +1181,28 @@ function markAttendance(emp, manual=false){
     .filter(r => r.empId === emp.id && r.date === today)
     .sort((a, b) => new Date(a.time) - new Date(b.time));
 
-  const last = todays[todays.length - 1];
-  const type = (last && last.type === 'in') ? 'out' : 'in';
+  // فحص: هل سجل حضور اليوم؟
+  const hasIn = todays.some(r => r.type === 'in');
+  // فحص: هل سجل انصراف اليوم؟
+  const hasOut = todays.some(r => r.type === 'out');
+
+  let type;
+
+  if(!hasIn){
+    // ما سجل حضور بعد → يسجل حضور
+    type = 'in';
+  }else if(!hasOut){
+    // سجل حضور بس ما سجل انصراف → يسجل انصراف
+    type = 'out';
+  }else{
+    // سجل حضور + انصراف اليوم كله → ما يسمح بتسجيل أكثر
+    toast(`⚠️ ${emp.name} سجل حضوره وانصرافه اليوم بالفعل`, 'warn');
+    flashResult(emp, 'in', now);
+    $('#resType').textContent = '⚠️ تم تسجيل الحضور والانصراف اليوم';
+    $('#resType').className = 'res-type out';
+    $('#resTime').textContent = 'لا يمكن التسجيل مرة أخرى اليوم';
+    return;
+  }
 
   records.push({
     id: uid(),
@@ -1237,12 +1297,26 @@ function flashResult(emp, type, date){
   if(emp.photo) photo.src = emp.photo; else photo.src = placeholderImg(emp.name);
 
   $('#resName').textContent = emp.name;
-  $('#resMeta').textContent = `${emp.code || '—'} · ${emp.dept || 'بدون قسم'}`;
+  $('#resMeta').textContent = (emp.code || '—') + ' · ' + (emp.dept || 'بدون قسم');
+
+  const today = ymd(new Date());
+  const todaysRecs = records.filter(r => r.empId === emp.id && r.date === today);
+  const hasIn = todaysRecs.some(r => r.type === 'in');
+  const hasOut = todaysRecs.some(r => r.type === 'out');
 
   const box = $('#resType');
-  box.className = 'res-type ' + type;
-  box.textContent = type === 'in' ? '🟢 تم تسجيل الحضور' : '🟠 تم تسجيل الانصراف';
-  $('#resTime').textContent = '⏰ ' + fmtTime(date.toISOString()) + ' — ' + fmtDate(date.toISOString());
+  if(hasIn && hasOut){
+    box.className = 'res-type out';
+    box.textContent = '✅ تم تسجيل الحضور والانصراف اليوم';
+  }else if(type === 'in'){
+    box.className = 'res-type in';
+    box.textContent = '🟢 تم تسجيل الحضور';
+  }else{
+    box.className = 'res-type out';
+    box.textContent = '🟠 تم تسجيل الانصراف';
+  }
+
+  $('#resTime').textContent = fmtTime(date.toISOString()) + ' — ' + fmtDate(date.toISOString());
 }
 
 function placeholderImg(txt){
@@ -1497,12 +1571,14 @@ function renderEmployees(){
       const id = btn.dataset.del;
       const emp = employees.find(e => e.id === id);
       if(!emp) return;
-      if(!confirm(`هل تريد حذف «${emp.name}»؟ لن تُحذف سجلاته السابقة.`)) return;
-      employees = employees.filter(e => e.id !== id);
-      saveEmp();
-      renderEmployees();
-      fillManualSelect();
-      toast('تم حذف الموظف', 'warn');
+      showModal('👤', 'حذف موظف', 'هل تريد حذف ' + emp.name + '؟ لن تُحذف سجلاته السابقة.', () => {
+        employees = employees.filter(e => e.id !== id);
+        saveEmp();
+        renderEmployees();
+        fillManualSelect();
+        playSoundOut();
+        toast('تم حذف الموظف ' + emp.name, 'warn');
+      });
     });
   });
 }
@@ -1554,38 +1630,42 @@ function renderRecords(){
 $('#btnExport').addEventListener('click', () => {
   const rows = getFilteredRecords();
   if(!rows.length) return toast('لا توجد بيانات للتصدير', 'warn');
-
-  const header = ['الاسم', 'الرقم الوظيفي', 'القسم', 'الحركة', 'التاريخ', 'الوقت'];
-  const csv = [header.join(',')].concat(
-    rows.map(r => [
-      `"${(r.name || '').replace(/"/g, '""')}"`,
-      `"${r.code || ''}"`,
-      `"${(r.dept || '').replace(/"/g, '""')}"`,
-      r.type === 'in' ? 'حضور' : 'انصراف',
-      r.date,
-      fmtTime(r.time)
-    ].join(','))
-  ).join('\n');
-
-  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `attendance_${ymd(new Date())}.csv`;
-  a.click();
-  URL.revokeObjectURL(a.href);
-  toast('تم تصدير الملف بنجاح', 'ok');
+  showModal('📊', 'تصدير السجلات', 'سيتم تصدير ' + rows.length + ' سجل بصيغة CSV. هل تريد المتابعة؟', () => {
+    const header = ['الاسم', 'الرقم الوظيفي', 'القسم', 'الحركة', 'التاريخ', 'الوقت'];
+    const csv = [header.join(',')].concat(
+      rows.map(r => [
+        '"' + (r.name || '').replace(/"/g, '""') + '"',
+        '"' + (r.code || '') + '"',
+        '"' + (r.dept || '').replace(/"/g, '""') + '"',
+        r.type === 'in' ? 'حضور' : 'انصراف',
+        r.date,
+        fmtTime(r.time)
+      ].join(','))
+    ).join('\n');
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'attendance_' + ymd(new Date()) + '.csv';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    playSoundIn();
+    toast('✅ تم تصدير الملف بنجاح', 'ok');
+  });
 });
 
 /* حذف الكل */
 $('#btnClear').addEventListener('click', () => {
   if(!records.length) return toast('لا توجد سجلات', 'warn');
-  if(!confirm('سيتم حذف جميع السجلات نهائياً. هل أنت متأكد؟')) return;
-  records = [];
-  saveRec();
-  renderRecords();
-  renderRecent();
-  renderReports();
-  toast('تم حذف جميع السجلات', 'danger');
+  showModal('🗑️', 'حذف جميع السجلات', 'سيتم حذف جميع السجلات نهائياً ولا يمكن التراجع. هل أنت متأكد؟', () => {
+    records = [];
+    saveRec();
+    renderRecords();
+    renderRecent();
+    renderReports();
+    playSoundUnknown();
+    speakArabic('تم حذف جميع السجلات');
+    toast('تم حذف جميع السجلات', 'danger');
+  });
 });
 
 /* =========================================================
@@ -1663,6 +1743,37 @@ function renderReports(){
     </tr>`;
   }).join('');
 }
+
+/* =========================================================
+   النافذة التفاعلية (Modal)
+   ========================================================= */
+let modalResolve = null;
+
+function showModal(icon, title, msg, onConfirm){
+  $('#modalIcon').textContent = icon;
+  $('#modalTitle').textContent = title;
+  $('#modalMsg').textContent = msg;
+  $('#modalOverlay').classList.add('show');
+  modalResolve = onConfirm;
+}
+
+$('#modalConfirm').addEventListener('click', () => {
+  $('#modalOverlay').classList.remove('show');
+  if(modalResolve) modalResolve();
+  modalResolve = null;
+});
+
+$('#modalCancel').addEventListener('click', () => {
+  $('#modalOverlay').classList.remove('show');
+  modalResolve = null;
+});
+
+$('#modalOverlay').addEventListener('click', e => {
+  if(e.target === $('#modalOverlay')){
+    $('#modalOverlay').classList.remove('show');
+    modalResolve = null;
+  }
+});
 
 /* =========================================================
    حماية النصوص
