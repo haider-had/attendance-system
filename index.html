@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>نظام الحضور والانصراف بالتعرف على الوجه</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='48' y2='48'%3E%3Cstop offset='0' stop-color='%2322d3ee'/%3E%3Cstop offset='1' stop-color='%236366f1'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='48' height='48' rx='12' fill='url(%23g)'/%3E%3Ccircle cx='24' cy='18' r='8' stroke='%23fff' stroke-width='2.5' fill='none'/%3E%3Cpath d='M10 42c0-7.7 6.3-14 14-14s14 6.3 14 14' stroke='%23fff' stroke-width='2.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" type="image/x-icon" href="نظام التعرف على الوجهه.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -77,8 +77,8 @@ nav{display:flex;flex-direction:column;gap:6px;flex:1}
   background:transparent;color:var(--muted);font-family:inherit;font-size:14.5px;font-weight:600;
   border-radius:13px;transition:.22s;text-align:right;
 }
-.nav-btn svg{flex-shrink:0;opacity:.7;transition:.2s}
-.nav-btn:hover svg,.nav-btn.active svg{opacity:1}
+.nav-btn svg,.nav-btn img{flex-shrink:0}
+.nav-btn:hover img{opacity:.85}
 .nav-btn:hover{background:rgba(255,255,255,.05);color:var(--text)}
 .nav-btn.active{
   background:linear-gradient(90deg,rgba(34,211,238,.16),rgba(99,102,241,.10));
@@ -371,14 +371,8 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
   <!-- الشريط الجانبي -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo" style="background:linear-gradient(135deg,#22d3ee,#6366f1);box-shadow:0 8px 30px rgba(34,211,238,.45)">
-        <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="16" r="9" stroke="#fff" stroke-width="3" fill="none"/>
-          <path d="M8 42c0-8.837 7.163-16 16-16s16 7.163 16 16" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/>
-          <circle cx="24" cy="16" r="4" fill="#fff" opacity=".5"/>
-          <path d="M20 15.5c0-2.5 1.8-4.5 4-4.5s4 2 4 4.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <rect x="19" y="36" width="10" height="3" rx="1.5" fill="#fff" opacity=".3"/>
-        </svg>
+      <div class="logo" style="background:linear-gradient(135deg,#22d3ee,#6366f1);box-shadow:0 8px 30px rgba(34,211,238,.45);overflow:hidden">
+        <img src="نظام التعرف على الوجهه.ico" alt="شعار" style="width:32px;height:32px;border-radius:8px;object-fit:cover">
       </div>
       <div>
         <h1>حضور</h1>
@@ -388,62 +382,23 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 
     <nav>
       <button class="nav-btn active" data-tab="scan">
-        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-          <rect x="4" y="8" width="40" height="28" rx="4" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <circle cx="24" cy="22" r="8" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <circle cx="24" cy="22" r="3" fill="currentColor" opacity=".6"/>
-          <rect x="18" y="4" width="12" height="6" rx="2" stroke="currentColor" stroke-width="2" fill="none"/>
-          <circle cx="36" cy="14" r="2" fill="currentColor"/>
-          <path d="M14 38h20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+        <img src="تسجيل الحضور.ico" alt="" style="width:22px;height:22px;border-radius:5px;flex-shrink:0">
         تسجيل الحضور
       </button>
       <button class="nav-btn" data-tab="employees">
-        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-          <circle cx="18" cy="14" r="7" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <path d="M4 40c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <circle cx="36" cy="16" r="5" stroke="currentColor" stroke-width="2" fill="none"/>
-          <path d="M38 28c4.5 1.5 8 5.5 8 10" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <rect x="30" y="32" width="14" height="2" rx="1" fill="currentColor" opacity=".2"/>
-        </svg>
+        <img src="الموظفون.ico" alt="" style="width:22px;height:22px;border-radius:5px;flex-shrink:0">
         الموظفون
       </button>
       <button class="nav-btn" data-tab="records">
-        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-          <rect x="6" y="4" width="36" height="40" rx="3" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <line x1="14" y1="14" x2="34" y2="14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="14" y1="22" x2="34" y2="22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <line x1="14" y1="30" x2="28" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
-          <circle cx="14" cy="22" r="1.5" fill="currentColor"/>
-          <circle cx="14" cy="30" r="1.5" fill="currentColor"/>
-          <path d="M10 38h10" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".4"/>
-        </svg>
+        <img src="السجلات.ico" alt="" style="width:22px;height:22px;border-radius:5px;flex-shrink:0">
         السجلات
       </button>
       <button class="nav-btn" data-tab="reports">
-        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-          <rect x="4" y="28" width="8" height="14" rx="2" fill="currentColor" opacity=".3"/>
-          <rect x="15" y="18" width="8" height="24" rx="2" fill="currentColor" opacity=".5"/>
-          <rect x="26" y="10" width="8" height="32" rx="2" fill="currentColor" opacity=".7"/>
-          <rect x="37" y="4" width="8" height="38" rx="2" fill="currentColor" opacity=".9"/>
-          <path d="M2 44h44" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="10" cy="24" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <circle cx="20" cy="16" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <circle cx="30" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
-          <circle cx="40" cy="6" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
-        </svg>
+        <img src="التقارير.ico" alt="" style="width:22px;height:22px;border-radius:5px;flex-shrink:0">
         التقارير
       </button>
       <button class="nav-btn" data-tab="settings">
-        <svg width="20" height="20" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="6" stroke="currentColor" stroke-width="2.5" fill="none"/>
-          <circle cx="24" cy="24" r="2" fill="currentColor"/>
-          <path d="M24 2v6M24 40v6M2 24h6M40 24h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M8.93 8.93l4.24 4.24M34.83 34.83l4.24 4.24M8.93 39.07l4.24-4.24M34.83 13.17l4.24-4.24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M17 8l2 3h10l2-3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <path d="M17 40l2-3h10l2 3" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/>
-        </svg>
+        <img src="الاعدادات.ico" alt="" style="width:22px;height:22px;border-radius:5px;flex-shrink:0">
         الإعدادات
       </button>
     </nav>
@@ -489,7 +444,6 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
               <option value="user">الكاميرا الأمامية</option>
               <option value="environment">الكاميرا الخلفية</option>
             </select>
-            <label class="switch"><input type="checkbox" id="autoStartCam" checked> تشغيل تلقائي</label>
             <label class="switch"><input type="checkbox" id="autoMark" checked> تسجيل تلقائي</label>
             <label class="switch"><input type="checkbox" id="soundEnabled" checked> 🔊 أصوات</label>
             <button id="btnTestSound" class="btn ghost" style="padding:6px 12px;font-size:12px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg> اختبار الصوت</button>
@@ -794,14 +748,12 @@ function playSoundRegister(){
    الصوت النصي (Speech Synthesis)
    ========================================================= */
 let arVoice = null;
-let voicesLoaded = false;
 
 function loadVoices(){
-  if(voicesLoaded) return;
   const voices = window.speechSynthesis.getVoices();
+  if(voices.length === 0) return;
   arVoice = voices.find(v => v.lang.startsWith('ar')) || null;
-  voicesLoaded = true;
-  if(voices.length > 0) return;
+  if(!arVoice) arVoice = voices.find(v => v.lang.includes('ar')) || null;
 }
 
 if('speechSynthesis' in window){
@@ -1239,20 +1191,6 @@ $('#btnResetAll').addEventListener('click', () => {
     fillManualSelect();
     renderRecent();
     renderEmployees();
-
-    if(MODELS_READY && $('#autoStartCam') && $('#autoStartCam').checked && !isSecure && !isInApp){
-      setTimeout(async () => {
-        const ok = await startCamera($('#scanVideo'), 'scan', $('#scanHint'));
-        if(ok){
-          $('#btnStartScan').disabled = true;
-          $('#btnStopScan').disabled = false;
-          scanning = true;
-          setScanBadge('🔍 جارٍ البحث…', '#8496b8');
-          scanLoop();
-          toast('✅ تم تشغيل الكاميرا تلقائياً', 'ok');
-        }
-      }, 800);
-    }
   }
 })();
 
