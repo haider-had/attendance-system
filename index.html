@@ -634,6 +634,19 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
           </div>
         </div>
       </div>
+
+      <div class="card" style="margin-top:16px">
+        <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> حماية التطبيق</h3>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">حدّد رمزاً سرياً من 4 إلى 6 أرقام لحماية الإعدادات والحذف والاستيراد.</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <label style="flex:1;min-width:160px">رمز الحماية الجديد
+            <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" placeholder="4-6 أرقام" autocomplete="new-password" style="direction:ltr;text-align:center;letter-spacing:4px">
+          </label>
+          <button id="btnSavePin" class="btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> حفظ الرمز</button>
+          <button id="btnClearPin" class="btn ghost">إزالة الرمز</button>
+        </div>
+        <p id="pinStatus" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></p>
+      </div>
     </section>
 
   </main>
@@ -794,14 +807,24 @@ function speakArabic(text){
 const KEY_EMP = 'attendance_employees_v1';
 const KEY_REC = 'attendance_records_v1';
 const KEY_SET = 'attendance_settings_v1';
+const KEY_PIN = 'attendance_pin_hash_v1';
+const KEY_LAST_BACKUP = 'attendance_last_backup_v1';
 
 let employees = JSON.parse(localStorage.getItem(KEY_EMP) || '[]');
 let records   = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
 let settings  = JSON.parse(localStorage.getItem(KEY_SET) || '{}');
 
-const saveEmp = () => localStorage.setItem(KEY_EMP, JSON.stringify(employees));
-const saveRec = () => localStorage.setItem(KEY_REC, JSON.stringify(records));
-const saveSet = () => localStorage.setItem(KEY_SET, JSON.stringify(settings));
+const saveEmp = () => { try{ localStorage.setItem(KEY_EMP, JSON.stringify(employees)); }catch(e){ handleQuota(); } };
+const saveRec = () => { try{ localStorage.setItem(KEY_REC, JSON.stringify(records)); }catch(e){ handleQuota(); } };
+const saveSet = () => { try{ localStorage.setItem(KEY_SET, JSON.stringify(settings)); }catch(e){ handleQuota(); } };
+
+let quotaWarned = false;
+function handleQuota(){
+  if(quotaWarned) return;
+  quotaWarned = true;
+  toast('⚠️ مساحة التخزين ممتلئة — يرجى تصدير نسخة احتياطية وحذف بيانات قديمة', 'danger', 7000);
+  speakArabic('مساحة التخزين ممتلئة، يرجى تصدير نسخة احتياطية');
+}
 
 // إعدادات افتراضية
 if(!settings.attFrom) settings.attFrom = '08:00';
@@ -892,6 +915,13 @@ function showSecureContextWarning(){
    التنقل بين التبويبات
    ========================================================= */
 function switchTab(name){
+  if(name === 'settings' && !sessionUnlocked){
+    promptPin('حماية الإعدادات', 'أدخل رمز الحماية لفتح الإعدادات', () => {
+      sessionUnlocked = true;
+      switchTab('settings');
+    });
+    return;
+  }
   $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
   $$('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
 
@@ -902,7 +932,7 @@ function switchTab(name){
   if(name === 'reports')  renderReports();
   if(name === 'employees'){ renderEmployees(); fillManualSelect(); }
   if(name === 'scan')     fillManualSelect();
-  if(name === 'settings') loadSettingsForm();
+  if(name === 'settings'){ loadSettingsForm(); updatePinStatus(); }
 }
 $$('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -1120,6 +1150,9 @@ $('#btnBackup').addEventListener('click', () => {
   a.download = 'attendance_backup_' + ymd(new Date()) + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
+  localStorage.setItem(KEY_LAST_BACKUP, new Date().toISOString());
+  const oldBanner = $('#backupWarn');
+  if(oldBanner) oldBanner.remove();
   playSoundIn();
   speakArabic('تم تصدير النسخة الاحتياطية');
   toast('✅ تم تصدير النسخة الاحتياطية', 'ok');
@@ -1127,8 +1160,10 @@ $('#btnBackup').addEventListener('click', () => {
 
 // استيراد نسخة احتياطية
 $('#btnRestore').addEventListener('click', () => {
-  showModal('📂', 'استيراد نسخة احتياطية', 'سيتم استبدال جميع البيانات الحالية بالبيانات المستوردة. هل تريد المتابعة؟', () => {
-    $('#restoreFile').click();
+  guardPin('استيراد نسخة احتياطية', 'أدخل رمز الحماية لاستيراد البيانات', () => {
+    showModal('📂', 'استيراد نسخة احتياطية', 'سيتم استبدال جميع البيانات الحالية بالبيانات المستوردة. هل تريد المتابعة؟', () => {
+      $('#restoreFile').click();
+    });
   });
 });
 
@@ -1157,14 +1192,16 @@ $('#restoreFile').addEventListener('change', e => {
 
 // حذف كل البيانات
 $('#btnResetAll').addEventListener('click', () => {
-  showModal('⚠️', 'حذف جميع البيانات', 'سيتم حذف جميع الموظفين والسجلات والإعدادات نهائياً! لا يمكن التراجع!', () => {
-    employees = []; records = [];
-    settings = { attFrom:'08:00', attTo:'09:00', depFrom:'16:00', depTo:'18:00' };
-    saveEmp(); saveRec(); saveSet();
-    renderRecords(); renderRecent(); renderReports(); renderEmployees(); fillManualSelect(); loadSettingsForm();
-    playSoundUnknown();
-    speakArabic('تم حذف جميع البيانات');
-    toast('تم حذف جميع البيانات', 'danger');
+  guardPin('حذف جميع البيانات', 'أدخل رمز الحماية لحذف البيانات', () => {
+    showModal('⚠️', 'حذف جميع البيانات', 'سيتم حذف جميع الموظفين والسجلات والإعدادات نهائياً! لا يمكن التراجع!', () => {
+      employees = []; records = [];
+      settings = { attFrom:'08:00', attTo:'09:00', depFrom:'16:00', depTo:'18:00' };
+      saveEmp(); saveRec(); saveSet();
+      renderRecords(); renderRecent(); renderReports(); renderEmployees(); fillManualSelect(); loadSettingsForm();
+      playSoundUnknown();
+      speakArabic('تم حذف جميع البيانات');
+      toast('تم حذف جميع البيانات', 'danger');
+    });
   });
 });
 
@@ -1196,8 +1233,28 @@ $('#btnResetAll').addEventListener('click', () => {
     fillManualSelect();
     renderRecent();
     renderEmployees();
+    checkBackupReminder();
   }
 })();
+
+function checkBackupReminder(){
+  const last = localStorage.getItem(KEY_LAST_BACKUP);
+  const never = !last;
+  const stale = last && (Date.now() - new Date(last).getTime()) > 7 * 24 * 60 * 60 * 1000;
+  if(!employees.length && never) return;
+  if(!never && !stale) return;
+  if($('#backupWarn')) return;
+  const banner = document.createElement('div');
+  banner.className = 'warn-banner';
+  banner.id = 'backupWarn';
+  banner.innerHTML = '<button class="dismiss-warn" title="إخفاء">✕</button> ⚠️ ' +
+    (never
+      ? 'لم يتم تصدير نسخة احتياطية بعد — يُنصح بتصدير نسخة احتياطية من الإعدادات لحماية بياناتك.'
+      : 'آخر نسخة احتياطية منذ أكثر من 7 أيام — يُنصح بتصدير نسخة احتياطية جديدة من الإعدادات.');
+  banner.querySelector('.dismiss-warn').addEventListener('click', () => banner.remove());
+  const main = $('main');
+  if(main) main.prepend(banner);
+}
 
 // زر التشغيل من داخل الـ hint
 document.addEventListener('click', e => {
@@ -1852,8 +1909,8 @@ function renderEmployees(){
 
   list.innerHTML = employees.map(e => `
     <div class="emp-item">
-      ${e.photo
-        ? `<img src="${e.photo}" alt="">`
+      ${safePhotoSrc(e.photo)
+        ? `<img src="${safePhotoSrc(e.photo)}" alt="">`
         : `<div class="emp-avatar">${escapeHtml(e.name.trim().charAt(0))}</div>`}
       <div class="emp-info">
         <strong>${escapeHtml(e.name)}</strong>
@@ -1914,7 +1971,7 @@ function renderRecords(){
   body.innerHTML = rows.map((r, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${r.photo ? `<img src="${r.photo}" class="record-photo" alt="">` : `<img src="${placeholderImg(r.name || '؟')}" class="record-photo" alt="">`}</td>
+      <td>${safePhotoSrc(r.photo) ? `<img src="${safePhotoSrc(r.photo)}" class="record-photo" alt="">` : `<img src="${placeholderImg(r.name || '؟')}" class="record-photo" alt="">`}</td>
       <td><strong>${escapeHtml(r.name)}</strong></td>
       <td>${escapeHtml(r.code || '—')}</td>
       <td>${escapeHtml(r.dept || '—')}</td>
@@ -1964,7 +2021,7 @@ $('#btnExport').addEventListener('click', () => {
       idx++;
       rowsHtml += `<tr>
         <td style="text-align:center;font-weight:700">${idx}</td>
-        <td style="text-align:center">${photo ? `<img src="${photo}" style="width:50px;height:50px;border-radius:10px;object-fit:cover;border:2px solid #e2e8f0">` : `<div style="width:50px;height:50px;border-radius:10px;background:linear-gradient(135deg,#22d3ee,#6366f1);color:#fff;display:inline-grid;place-items:center;font-weight:900;font-size:20px">${escapeHtml((emp.name||'؟').charAt(0))}</div>`}</td>
+        <td style="text-align:center">${safePhotoSrc(photo) ? `<img src="${safePhotoSrc(photo)}" style="width:50px;height:50px;border-radius:10px;object-fit:cover;border:2px solid #e2e8f0">` : `<div style="width:50px;height:50px;border-radius:10px;background:linear-gradient(135deg,#22d3ee,#6366f1);color:#fff;display:inline-grid;place-items:center;font-weight:900;font-size:20px">${escapeHtml((emp.name||'؟').charAt(0))}</div>`}</td>
         <td style="font-weight:700">${escapeHtml(emp.name)}</td>
         <td>${escapeHtml(emp.code || '—')}</td>
         <td>${escapeHtml(emp.dept || '—')}</td>
@@ -2149,22 +2206,122 @@ function showModal(icon, title, msg, onConfirm){
   modalResolve = onConfirm;
 }
 
+/* =========================================================
+   حماية التطبيق برمز PIN
+   ========================================================= */
+let sessionUnlocked = false;
+let pinModalResolve = null;
+
+function showPinModal(icon, title, msg, onConfirm){
+  $('#modalIcon').textContent = icon;
+  $('#modalTitle').textContent = title;
+  $('#modalMsg').textContent = msg;
+  let wrap = $('#pinModalWrap');
+  if(!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'pinModalWrap';
+    wrap.innerHTML = '<input id="pinModalInput" type="password" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" placeholder="••••" autocomplete="off" style="width:100%;max-width:220px;margin:0 auto 14px;display:block;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:rgba(255,255,255,.06);color:var(--text);font-size:20px;letter-spacing:8px;text-align:center;direction:ltr">';
+    $('#modalMsg').after(wrap);
+  }
+  wrap.style.display = 'block';
+  const inp = $('#pinModalInput');
+  inp.value = '';
+  $('#modalOverlay').classList.add('show');
+  pinModalResolve = onConfirm;
+  setTimeout(() => inp.focus(), 50);
+}
+
 $('#modalConfirm').addEventListener('click', () => {
+  const wrap = $('#pinModalWrap');
+  if(wrap && wrap.style.display !== 'none' && $('#pinModalInput')){
+    const val = $('#pinModalInput').value.trim();
+    verifyPin(val).then(ok => {
+      if(!ok){ toast('❌ رمز الحماية غير صحيح', 'danger'); $('#pinModalInput').value=''; $('#pinModalInput').focus(); return; }
+      $('#modalOverlay').classList.remove('show');
+      wrap.style.display = 'none';
+      const cb = pinModalResolve; pinModalResolve = null;
+      sessionUnlocked = true;
+      if(cb) cb();
+    });
+    return;
+  }
   $('#modalOverlay').classList.remove('show');
   if(modalResolve) modalResolve();
   modalResolve = null;
+  pinModalResolve = null;
 });
 
 $('#modalCancel').addEventListener('click', () => {
   $('#modalOverlay').classList.remove('show');
+  const wrap = $('#pinModalWrap');
+  if(wrap) wrap.style.display = 'none';
   modalResolve = null;
+  pinModalResolve = null;
 });
 
 $('#modalOverlay').addEventListener('click', e => {
   if(e.target === $('#modalOverlay')){
     $('#modalOverlay').classList.remove('show');
+    const wrap = $('#pinModalWrap');
+    if(wrap) wrap.style.display = 'none';
     modalResolve = null;
+    pinModalResolve = null;
   }
+});
+
+async function hashPin(pin){
+  const data = new TextEncoder().encode('att_pin::' + pin);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function hasPin(){
+  return !!localStorage.getItem(KEY_PIN);
+}
+
+async function verifyPin(pin){
+  if(!pin) return false;
+  const stored = localStorage.getItem(KEY_PIN);
+  if(!stored) return true;
+  return (await hashPin(pin)) === stored;
+}
+
+function promptPin(title, msg, onOk){
+  if(!hasPin()){ onOk(); return; }
+  showPinModal('🔒', title, msg, onOk);
+}
+
+function guardPin(title, msg, onOk){
+  promptPin(title, msg, onOk);
+}
+
+function updatePinStatus(){
+  const el = $('#pinStatus');
+  if(!el) return;
+  el.textContent = hasPin()
+    ? '✅ رمز الحماية مفعّل — يُطلب عند فتح الإعدادات أو الحذف أو الاستيراد (تبقى مفتوحة حتى تحديث الصفحة).'
+    : '⚠️ لا يوجد رمز حماية حالياً — الحماية معطّلة حتى تحدد رمزاً.';
+}
+
+$('#btnSavePin').addEventListener('click', async () => {
+  const val = $('#pinInput').value.trim();
+  if(!/^\d{4,6}$/.test(val)){ toast('⚠️ الرمز يجب أن يكون من 4 إلى 6 أرقام', 'danger'); return; }
+  localStorage.setItem(KEY_PIN, await hashPin(val));
+  $('#pinInput').value = '';
+  updatePinStatus();
+  toast('✅ تم تفعيل رمز الحماية', 'ok');
+  speakArabic('تم تفعيل رمز الحماية');
+});
+
+$('#btnClearPin').addEventListener('click', async () => {
+  if(!hasPin()){ toast('لا يوجد رمز لإزالته', 'ok'); return; }
+  const run = () => {
+    localStorage.removeItem(KEY_PIN);
+    updatePinStatus();
+    toast('تم إزالة رمز الحماية', 'ok');
+  };
+  if(sessionUnlocked) run();
+  else showPinModal('🔒', 'إزالة رمز الحماية', 'أدخل الرمز الحالي للإزالة', run);
 });
 
 /* =========================================================
@@ -2174,6 +2331,11 @@ function escapeHtml(str){
   return String(str ?? '').replace(/[&<>"']/g, m => ({
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[m]));
+}
+function safePhotoSrc(photo){
+  if(typeof photo !== 'string') return '';
+  if(/^data:image\/(png|jpeg|jpg|webp);base64,[A-Za-z0-9+/=]+$/.test(photo)) return photo;
+  return '';
 }
 
 /* =========================================================
