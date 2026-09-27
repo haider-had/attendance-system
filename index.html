@@ -637,7 +637,7 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
 
       <div class="card" style="margin-top:16px">
         <h3 class="card-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> حماية التطبيق</h3>
-        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">حدّد رمزاً سرياً من 4 إلى 6 أرقام لحماية الإعدادات والحذف والاستيراد.</p>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">حدّد رمزاً سرياً من 4 إلى 6 أرقام أو فعّل بصمة الإصبع لحماية الإعدادات والحذف والاستيراد.</p>
         <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
           <label style="flex:1;min-width:160px">رمز الحماية الجديد
             <input id="pinInput" type="password" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" placeholder="4-6 أرقام" autocomplete="new-password" style="direction:ltr;text-align:center;letter-spacing:4px">
@@ -646,6 +646,14 @@ tbody tr:hover{background:rgba(255,255,255,.035)}
           <button id="btnClearPin" class="btn ghost">إزالة الرمز</button>
         </div>
         <p id="pinStatus" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></p>
+
+        <div style="border-top:1px solid var(--border);margin-top:14px;padding-top:14px">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button id="btnEnrollFp" class="btn primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><path d="M12 11c0 3.5-1 6.5-2 9"/><path d="M8.5 13c0-2 .5-4 1.5-5.5"/><path d="M15.5 13c0-4-1-7-3.5-9"/><path d="M18.5 14c0-5-2-9-6.5-11"/><path d="M5.5 15c0-6 3-11 7-13"/></svg> تفعيل بصمة الإصبع</button>
+            <button id="btnClearFp" class="btn ghost">إزالة البصمة</button>
+          </div>
+          <p id="fpStatus" style="margin-top:10px;font-size:12.5px;color:var(--muted)"></p>
+        </div>
       </div>
     </section>
 
@@ -809,6 +817,7 @@ const KEY_REC = 'attendance_records_v1';
 const KEY_SET = 'attendance_settings_v1';
 const KEY_PIN = 'attendance_pin_hash_v1';
 const KEY_LAST_BACKUP = 'attendance_last_backup_v1';
+const KEY_FP = 'attendance_fp_cred_v1';
 
 let employees = JSON.parse(localStorage.getItem(KEY_EMP) || '[]');
 let records   = JSON.parse(localStorage.getItem(KEY_REC) || '[]');
@@ -916,7 +925,7 @@ function showSecureContextWarning(){
    ========================================================= */
 function switchTab(name){
   if(name === 'settings' && !sessionUnlocked){
-    promptPin('حماية الإعدادات', 'أدخل رمز الحماية لفتح الإعدادات', () => {
+    guardPin('حماية الإعدادات', 'تحقق بالبصمة أو أدخل رمز الحماية لفتح الإعدادات', () => {
       sessionUnlocked = true;
       switchTab('settings');
     });
@@ -932,7 +941,7 @@ function switchTab(name){
   if(name === 'reports')  renderReports();
   if(name === 'employees'){ renderEmployees(); fillManualSelect(); }
   if(name === 'scan')     fillManualSelect();
-  if(name === 'settings'){ loadSettingsForm(); updatePinStatus(); }
+  if(name === 'settings'){ loadSettingsForm(); updatePinStatus(); updateFpStatus(); }
 }
 $$('.nav-btn').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
 
@@ -1160,7 +1169,7 @@ $('#btnBackup').addEventListener('click', () => {
 
 // استيراد نسخة احتياطية
 $('#btnRestore').addEventListener('click', () => {
-  guardPin('استيراد نسخة احتياطية', 'أدخل رمز الحماية لاستيراد البيانات', () => {
+  guardPin('استيراد نسخة احتياطية', 'تحقق بالبصمة أو أدخل رمز الحماية لاستيراد البيانات', () => {
     showModal('📂', 'استيراد نسخة احتياطية', 'سيتم استبدال جميع البيانات الحالية بالبيانات المستوردة. هل تريد المتابعة؟', () => {
       $('#restoreFile').click();
     });
@@ -1192,7 +1201,7 @@ $('#restoreFile').addEventListener('change', e => {
 
 // حذف كل البيانات
 $('#btnResetAll').addEventListener('click', () => {
-  guardPin('حذف جميع البيانات', 'أدخل رمز الحماية لحذف البيانات', () => {
+  guardPin('حذف جميع البيانات', 'تحقق بالبصمة أو أدخل رمز الحماية لحذف البيانات', () => {
     showModal('⚠️', 'حذف جميع البيانات', 'سيتم حذف جميع الموظفين والسجلات والإعدادات نهائياً! لا يمكن التراجع!', () => {
       employees = []; records = [];
       settings = { attFrom:'08:00', attTo:'09:00', depFrom:'16:00', depTo:'18:00' };
@@ -2291,8 +2300,71 @@ function promptPin(title, msg, onOk){
   showPinModal('🔒', title, msg, onOk);
 }
 
-function guardPin(title, msg, onOk){
+/* ---- بصمة الإصبع (WebAuthn) ---- */
+function fpSupported(){
+  return !!(window.PublicKeyCredential && navigator.credentials && window.isSecureContext);
+}
+async function fpAvailable(){
+  try{ return fpSupported() && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(); }
+  catch(e){ return false; }
+}
+function hasFp(){ return !!localStorage.getItem(KEY_FP); }
+function b64FromBuf(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function bufFromB64(b64){
+  const s = atob(b64); const a = new Uint8Array(s.length);
+  for(let i = 0; i < s.length; i++) a[i] = s.charCodeAt(i);
+  return a.buffer;
+}
+
+async function enrollFp(){
+  if(!await fpAvailable()){ toast('⚠️ البصمة غير مدعومة على هذا الجهاز/المتصفح', 'danger'); return false; }
+  try{
+    const cred = await navigator.credentials.create({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      rp: { name: 'نظام الحضور' },
+      user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'owner', displayName: 'المالك' },
+      pubKeyCredParams: [ { type:'public-key', alg:-7 }, { type:'public-key', alg:-257 } ],
+      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required' },
+      timeout: 60000,
+      attestation: 'none'
+    }});
+    if(!cred){ toast('❌ تعذّر تسجيل البصمة', 'danger'); return false; }
+    localStorage.setItem(KEY_FP, b64FromBuf(cred.rawId));
+    updateFpStatus();
+    toast('✅ تم تفعيل بصمة الإصبع', 'ok');
+    speakArabic('تم تفعيل بصمة الإصبع');
+    return true;
+  }catch(e){
+    toast('❌ تعذّر تسجيل البصمة', 'danger');
+    return false;
+  }
+}
+
+async function verifyFp(){
+  if(!hasFp()) return false;
+  try{
+    await navigator.credentials.get({ publicKey: {
+      challenge: crypto.getRandomValues(new Uint8Array(32)),
+      allowCredentials: [ { type:'public-key', id: bufFromB64(localStorage.getItem(KEY_FP)) } ],
+      userVerification: 'required',
+      timeout: 60000
+    }});
+    return true;
+  }catch(e){ return false; }
+}
+
+async function promptAuth(title, msg, onOk){
+  if(hasFp()){
+    const ok = await verifyFp();
+    if(ok){ sessionUnlocked = true; onOk(); return; }
+    if(!hasPin()){ toast('⚠️ تعذّر التحقق ببصمة الإصبع', 'danger'); return; }
+    toast('ℹ️ تعذّر التحقق بالبصمة — استخدم رمز الحماية', 'ok');
+  }
   promptPin(title, msg, onOk);
+}
+
+function guardPin(title, msg, onOk){
+  promptAuth(title, msg, onOk);
 }
 
 function updatePinStatus(){
@@ -2301,6 +2373,21 @@ function updatePinStatus(){
   el.textContent = hasPin()
     ? '✅ رمز الحماية مفعّل — يُطلب عند فتح الإعدادات أو الحذف أو الاستيراد (تبقى مفتوحة حتى تحديث الصفحة).'
     : '⚠️ لا يوجد رمز حماية حالياً — الحماية معطّلة حتى تحدد رمزاً.';
+}
+
+function updateFpStatus(){
+  const el = $('#fpStatus');
+  if(!el) return;
+  if(!fpSupported()){
+    el.textContent = '⚠️ البصمة تتطلب رابط HTTPS ومتصفح حديثاً — غير متاحة هنا، استخدم رمز الحماية.';
+    return;
+  }
+  fpAvailable().then(av => {
+    if(!av){ el.textContent = '⚠️ لا يوجد قارئ بصمة على هذا الجهاز — استخدم رمز الحماية.'; return; }
+    el.textContent = hasFp()
+      ? '✅ بصمة الإصبع مفعّلة — تُطلب عند فتح الإعدادات أو الحذف أو الاستيراد. (بصمة الجهاز فقط، وليست للدخول بالوجه)'
+      : 'ℹ️ جهازك يدعم بصمة الإصبع — اضغط "تفعيل بصمة الإصبع".';
+  });
 }
 
 $('#btnSavePin').addEventListener('click', async () => {
@@ -2321,7 +2408,19 @@ $('#btnClearPin').addEventListener('click', async () => {
     toast('تم إزالة رمز الحماية', 'ok');
   };
   if(sessionUnlocked) run();
-  else showPinModal('🔒', 'إزالة رمز الحماية', 'أدخل الرمز الحالي للإزالة', run);
+  else promptAuth('إزالة رمز الحماية', 'تحقق بالبصمة أو أدخل الرمز الحالي للإزالة', run);
+});
+
+$('#btnEnrollFp').addEventListener('click', async () => {
+  if(hasFp()){ toast('البصمة مفعّلة بالفعل — أزلها أولاً لإعادة التسجيل', 'ok'); return; }
+  await enrollFp();
+});
+
+$('#btnClearFp').addEventListener('click', () => {
+  if(!hasFp()){ toast('لا توجد بصمة لإزالتها', 'ok'); return; }
+  localStorage.removeItem(KEY_FP);
+  updateFpStatus();
+  toast('تم إزالة بصمة الإصبع', 'ok');
 });
 
 /* =========================================================
